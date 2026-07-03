@@ -2,6 +2,21 @@
 
 Thank you for your interest in contributing to WPConvert developer tools!
 
+## Pull requests
+
+Pull requests are welcome for docs, examples, CLI/MCP bug fixes, and safety improvements.
+
+Please do not submit changes that include:
+
+- secrets, API keys, or private config
+- WPConvert backend code
+- conversion engine logic
+- AI prompts
+- billing/quota logic
+- changes that send user files to a non-WPConvert endpoint
+
+All pull requests are reviewed before merging.
+
 ## What Belongs Here
 
 This repository contains **open-source client tooling only**:
