@@ -1,0 +1,33 @@
+{
+  "name": "@wpconvert/mcp",
+  "version": "0.1.0",
+  "description": "Model Context Protocol server for WPConvert.ai — lets an AI agent convert the current workspace folder into a WordPress theme.",
+  "license": "MIT",
+  "author": "WPConvert.ai",
+  "type": "module",
+  "bin": {
+    "wpconvert-mcp": "src/server.mjs"
+  },
+  "files": [
+    "src/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "wpconvert": "^0.1.0"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "wordpress",
+    "wpconvert",
+    "ai"
+  ]
+}
