@@ -1,6 +1,12 @@
 # WPConvert Devtools
 
-**Convert AI-built websites to WordPress from your terminal, API, or AI assistant.**
+[![npm version](https://img.shields.io/npm/v/wpconvert.svg)](https://www.npmjs.com/package/wpconvert)
+[![MCP package](https://img.shields.io/npm/v/@wpconvert/mcp.svg)](https://www.npmjs.com/package/@wpconvert/mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+**Open-source developer tools for turning AI-built websites into WordPress themes from your terminal, API, or AI assistant.**
+
+> The CLI and MCP server are open source. The WPConvert conversion engine runs on [WPConvert.ai](https://wpconvert.ai) and requires an API key.
 
 This repository contains the open-source [WPConvert](https://wpconvert.ai) developer tools:
 
@@ -11,7 +17,7 @@ This repository contains the open-source [WPConvert](https://wpconvert.ai) devel
 | [`examples/`](examples) | API usage examples (curl + Node.js) |
 | [`docs/`](docs) | CLI, MCP, and API reference |
 
-The **WPConvert conversion engine** is proprietary and hosted on [WPConvert.ai](https://wpconvert.ai). These tools are thin clients that call the hosted API over HTTPS. A **WPConvert API key** is required.
+These tools are thin clients that call the hosted API over HTTPS.
 
 ## What this repo is NOT
 
