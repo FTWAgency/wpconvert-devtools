@@ -6,7 +6,7 @@
 
 **Open-source developer tools for turning AI-built websites into WordPress themes from your terminal, API, or AI assistant.**
 
-> The CLI and MCP server are open source. The WPConvert conversion engine runs on [WPConvert.ai](https://wpconvert.ai) and requires an API key.
+> The CLI and MCP server are open source. The WPConvert conversion engine runs on [WPConvert.ai](https://wpconvert.ai) and requires an API key. Free verified accounts can create preview-only developer conversions; downloading `theme.zip` requires PRO, Agency, or PAYG credits.
 
 This repository contains the open-source [WPConvert](https://wpconvert.ai) developer tools:
 
@@ -27,8 +27,45 @@ This repository does **not** include the WPConvert conversion engine, backend wo
 
 - **Node.js >= 18**
 - A **WPConvert API key** (`wpc_live_...`) from your dashboard (**Settings → API & CLI**)
-- **Pro/Agency** plans include developer access; **PAYG** works with available credits
-- CLI, API, and MCP use the **same credits** as dashboard conversions (1 credit per successful conversion; failed conversions are refunded)
+- **PRO/Agency** or **PAYG credits** for full conversions with `theme.zip` download
+- **Free verified accounts** can run up to **3 lifetime** preview-only developer conversions (Playground preview, no ZIP)
+- CLI, API, and MCP use the **same credits** as dashboard conversions for paid exports (1 credit per successful conversion; failed conversions are refunded)
+
+## Free developer previews
+
+Free verified WPConvert accounts can create up to **3 lifetime** developer previews from the CLI, API, or MCP. Preview-only conversions generate a WordPress Playground preview, but **theme ZIP downloads are locked**. To download `theme.zip`, upgrade to PRO/Agency or add PAYG credits, then **re-run** the conversion.
+
+- Preview-only jobs are **never retroactively downloadable** — upgrading does not unlock an old job; convert again after upgrading.
+- On success, `wpconvert convert` **automatically creates a Playground preview URL**.
+- Preview-only jobs **auto-open your browser** by default (the preview is the deliverable).
+- Use `--no-open` in CI/headless, or `--no-preview` to skip Playground entirely.
+
+### Expected preview-only CLI output
+
+```bash
+wpconvert convert . --type theme
+```
+
+```
+Scanning /path/to/project ...
+Packaging zip ...
+Zip built: 1.2 MB compressed.
+Uploading (multipart) and starting conversion ...
+✔ Conversion queued: abc123-def456
+Free developer preview 1 of 3.
+Download locked. Upgrade to PRO or add PAYG credits, then re-run this conversion to download theme.zip.
+  … processing 42%
+✔ Conversion complete.
+Download locked. Upgrade to PRO or add PAYG credits, then re-run this conversion to download theme.zip.
+Creating Playground preview ...
+✔ Preview ready (WordPress Playground):
+  https://playground.wordpress.net/...
+  Link expires ... and is single-use limited.
+  Opening in your default browser ...
+Upgrade to Pro/Agency or buy PAYG credits, then re-run convert to download theme.zip.
+```
+
+Paid conversions (PRO/Agency/PAYG) download `theme.zip` automatically and print the preview URL without auto-opening unless you pass `--open`.
 
 ## Quickstart (CLI)
 
@@ -38,7 +75,18 @@ wpconvert login
 wpconvert convert . --type theme
 ```
 
-The CLI smart-zips your folder, uploads it, polls until done, and downloads the theme `.zip`.
+The CLI smart-zips your folder, uploads it, polls until done, then downloads `theme.zip` (paid) or opens a Playground preview (free preview-only).
+
+### Useful `convert` flags
+
+```bash
+wpconvert convert . --dry-run      # list what would upload; no upload, no credit
+wpconvert convert . --no-download    # paid: skip auto-download on success
+wpconvert convert . --open           # paid: auto-open Playground in browser
+wpconvert convert . --no-open        # preview-only: don't auto-open browser (CI/headless)
+wpconvert convert . --no-preview     # skip Playground preview entirely
+wpconvert preview <jobId> --open     # open an existing job's preview later
+```
 
 ### Preview before uploading
 
