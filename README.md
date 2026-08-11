@@ -16,6 +16,7 @@ This repository contains the open-source [WPConvert](https://wpconvert.ai) devel
 | [`@wpconvert/mcp`](packages/mcp) | MCP server — convert from Cursor, Claude Desktop, or other MCP clients |
 | [`examples/`](examples) | API usage examples (curl + Node.js) |
 | [`docs/`](docs) | CLI, MCP, and API reference |
+| [`openapi.yaml`](openapi.yaml) | Machine-readable OpenAPI 3.1 Developer API contract (mirrored from production) |
 
 These tools are thin clients that call the hosted API over HTTPS.
 
@@ -125,7 +126,7 @@ Add to your MCP config:
       "command": "npx",
       "args": ["-y", "@wpconvert/mcp"],
       "env": {
-        "WPCONVERT_API_KEY": "wpc_live_xxx"
+        "WPCONVERT_API_KEY": "wpc_live_EXAMPLE_ONLY_NOT_A_REAL_KEY"
       }
     }
   }
@@ -136,21 +137,49 @@ Optional: set `WPCONVERT_API_BASE` to point at a non-default API host (testing o
 
 See [docs/mcp.md](docs/mcp.md) for tool reference and typical agent flow.
 
-## API overview
+## Developer API (REST)
+
+WPConvert offers three developer surfaces: **REST API**, **CLI**, and **MCP**. All call the same hosted API at `https://api.wpconvert.ai`.
+
+| Surface | Entry point |
+| --- | --- |
+| **OpenAPI 3.1** | [`openapi.yaml`](openapi.yaml) — canonical machine-readable contract (mirrored from production) |
+| **REST guide** | [`docs/api.md`](docs/api.md) — workflows, capabilities, idempotency, status, download, Playground |
+| **CLI** | [`docs/cli.md`](docs/cli.md) — `wpconvert quota`, `wpconvert convert ./site` |
+| **MCP** | [`docs/mcp.md`](docs/mcp.md) — agent tools for Cursor, Claude Desktop, etc. |
+
+> `openapi.yaml` is a **byte-identical mirror** of the canonical WPConvert API contract maintained in the private application repository. Do not independently modify API behavior or schemas here. Contract changes originate with the production API and are mirrored into this repository.
+
+**Quick example:**
+
+```bash
+curl https://api.wpconvert.ai/api/convert/quota \
+  -H "X-API-Key: wpc_live_EXAMPLE_ONLY_NOT_A_REAL_KEY"
+```
+
+See [`docs/api.md`](docs/api.md) for the full workflow (quota → convert → status → download or Playground) and [`examples/`](examples/) for end-to-end scripts.
+
+## API overview (legacy quick reference)
+
+> Prefer [`docs/api.md`](docs/api.md) and [`openapi.yaml`](openapi.yaml) for the current contract. The table below is a minimal quick reference.
 
 All requests require the `X-API-Key` header. Base URL: `https://api.wpconvert.ai`
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
+| `GET` | `/api/convert/quota` | Preflight quota and developer capabilities |
 | `POST` | `/api/convert` | Upload a zip and start conversion (multipart) |
-| `GET` | `/api/convert/:jobId/status` | Poll conversion status |
-| `GET` | `/api/download/:projectId` | Get download URL for a completed conversion |
+| `POST` | `/api/convert/upload-url` | Mint a signed URL for large archives |
+| `POST` | `/api/convert/from-storage` | Queue conversion after signed upload |
+| `GET` | `/api/convert/{jobId}/status` | Poll conversion status |
+| `GET` | `/api/download/{projectId}` | Get download URL for a completed conversion |
+| `POST` | `/api/playground/sessions` | Create a Playground preview session |
 
 ### Start a conversion
 
 ```bash
 curl -X POST https://api.wpconvert.ai/api/convert \
-  -H "X-API-Key: wpc_live_xxx" \
+  -H "X-API-Key: wpc_live_EXAMPLE_ONLY_NOT_A_REAL_KEY" \
   -F "file=@my-site.zip" \
   -F "project_name=my-site" \
   -F "export_type=theme"
@@ -162,19 +191,19 @@ Returns `{ "jobId": "...", "status": "queued", ... }`.
 
 ```bash
 curl https://api.wpconvert.ai/api/convert/JOB_ID/status \
-  -H "X-API-Key: wpc_live_xxx"
+  -H "X-API-Key: wpc_live_EXAMPLE_ONLY_NOT_A_REAL_KEY"
 ```
 
 ### Download result
 
 ```bash
 curl https://api.wpconvert.ai/api/download/PROJECT_ID \
-  -H "X-API-Key: wpc_live_xxx"
+  -H "X-API-Key: wpc_live_EXAMPLE_ONLY_NOT_A_REAL_KEY"
 ```
 
 Returns `{ "download_url": "https://...", "name": "my-site-theme.zip" }`. Follow the `download_url` to fetch the theme zip — do not hard-code storage paths.
 
-See [docs/api.md](docs/api.md) and [examples/](examples/) for full examples.
+See [docs/api.md](docs/api.md), [openapi.yaml](openapi.yaml), and [examples/](examples/) for full examples.
 
 ## Environment variables
 

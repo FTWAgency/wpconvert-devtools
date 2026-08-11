@@ -10,9 +10,13 @@
   "scripts": {
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm test --workspaces --if-present",
-    "check": "node packages/cli/bin/wpconvert.js --help && node --check packages/mcp/src/server.mjs && npm test --workspaces --if-present"
+    "verify:openapi": "node scripts/verify-openapi.mjs",
+    "check": "node packages/cli/bin/wpconvert.js --help && node --check packages/mcp/src/server.mjs && npm run verify:openapi && npm test --workspaces --if-present"
   },
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "yaml": "^2.9.0"
   }
 }
