@@ -17,6 +17,23 @@
  */
 
 const { getApiBase, getApiKey } = require('./config');
+const { assertIdempotencyKey, isAmbiguousTransportError, sleep } = require('./idempotency');
+
+const CLI_VERSION = require('../package.json').version;
+const IDEMPOTENCY_HEADER = 'Idempotency-Key';
+const SUBMISSION_TRANSPORT_RETRY_MS = 500;
+
+/** Optional per-request extras (e.g. MCP tool name). Set via setRequestExtras(). */
+let requestExtras = {};
+
+function setRequestExtras(extras = {}) {
+  requestExtras = extras && typeof extras === 'object' ? extras : {};
+}
+
+function clientHeaderValue() {
+  if (process.env.WPCONVERT_CLIENT) return process.env.WPCONVERT_CLIENT;
+  return `cli/${CLI_VERSION}`;
+}
 
 class ApiError extends Error {
   constructor(message, { code, status, details } = {}) {
@@ -40,7 +57,21 @@ function requireKey() {
 }
 
 function authHeaders(extra = {}) {
-  return { 'X-API-Key': requireKey(), ...extra };
+  const headers = {
+    'X-API-Key': requireKey(),
+    'X-WPConvert-Client': clientHeaderValue(),
+    ...extra,
+  };
+  if (requestExtras.tool) headers['X-WPConvert-Tool'] = String(requestExtras.tool);
+  return headers;
+}
+
+function submissionHeaders(idempotencyKey, extra = {}) {
+  const headers = authHeaders(extra);
+  if (idempotencyKey) {
+    headers[IDEMPOTENCY_HEADER] = assertIdempotencyKey(idempotencyKey);
+  }
+  return headers;
 }
 
 /** Parse a response, throwing ApiError on non-2xx (handles clean + legacy shapes). */
@@ -53,23 +84,109 @@ async function parseResponse(res) {
 
   if (res.ok) return body;
 
-  // Clean envelope: { error: { code, message, ... } }
+  throw apiErrorFromResponse(res.status, body);
+}
+
+/**
+ * Parse conversion submission responses (200/202 success; structured 409 conflicts).
+ * @returns {Promise<object>}
+ */
+async function parseSubmissionResponse(res, { hadTransportRetry = false } = {}) {
+  let body = null;
+  const text = await res.text();
+  if (text) {
+    try { body = JSON.parse(text); } catch (_) { body = { raw: text }; }
+  }
+
+  if (res.status === 200 || res.status === 202) {
+    if (!body || typeof body !== 'object') {
+      throw new ApiError('Conversion started but the server returned an empty response.', {
+        code: 'http_error',
+        status: res.status,
+        details: { hadTransportRetry },
+      });
+    }
+    if (hadTransportRetry) body._hadTransportRetry = true;
+    return body;
+  }
+
+  const err = apiErrorFromResponse(res.status, body);
+  if (hadTransportRetry) err.details = { ...err.details, hadTransportRetry: true };
+  throw err;
+}
+
+function apiErrorFromResponse(status, body) {
   if (body && body.error && typeof body.error === 'object') {
     const { code, message, ...rest } = body.error;
-    throw new ApiError(message, { code, status: res.status, details: rest });
+    return new ApiError(message, { code, status, details: rest });
   }
-  // Legacy shape: { error: 'string', message?, ... }
   if (body && typeof body.error === 'string') {
-    throw new ApiError(body.message || body.error, {
+    return new ApiError(body.message || body.error, {
       code: body.code || body.error,
-      status: res.status,
+      status,
       details: body,
     });
   }
-  throw new ApiError(`Request failed with status ${res.status}`, {
+  return new ApiError(`Request failed with status ${status}`, {
     code: 'http_error',
-    status: res.status,
+    status,
     details: body || {},
+  });
+}
+
+function isNonRetryableSubmissionError(err) {
+  if (!(err instanceof ApiError)) return false;
+  if ([400, 401, 403, 409, 422, 429].includes(err.status)) return true;
+  if (err.code === 'invalid_idempotency_key') return true;
+  return false;
+}
+
+/**
+ * Perform one conversion submission with optional bounded transport retry.
+ * @param {(headers: Record<string, string>) => Promise<Response>} performRequest
+ * @param {{ idempotencyKey?: string }} opts
+ */
+async function submitConversionRequest(performRequest, { idempotencyKey } = {}) {
+  const key = idempotencyKey ? assertIdempotencyKey(idempotencyKey) : null;
+  let hadTransportRetry = false;
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    let res;
+    try {
+      res = await performRequest(submissionHeaders(key));
+    } catch (e) {
+      if (attempt === 0 && isAmbiguousTransportError(e)) {
+        hadTransportRetry = true;
+        await sleep(SUBMISSION_TRANSPORT_RETRY_MS);
+        continue;
+      }
+      throw new ApiError(e.message || 'Network request failed', {
+        code: 'network_error',
+        status: 0,
+        details: {
+          cause: e.cause?.code || null,
+          hadTransportRetry,
+        },
+      });
+    }
+
+    try {
+      return await parseSubmissionResponse(res, { hadTransportRetry });
+    } catch (e) {
+      if (e instanceof ApiError && isNonRetryableSubmissionError(e)) throw e;
+      if (attempt === 0 && isAmbiguousTransportError(e)) {
+        hadTransportRetry = true;
+        await sleep(SUBMISSION_TRANSPORT_RETRY_MS);
+        continue;
+      }
+      throw e;
+    }
+  }
+
+  throw new ApiError('Network request failed after retry.', {
+    code: 'network_error',
+    status: 0,
+    details: { hadTransportRetry: true },
   });
 }
 
@@ -88,6 +205,14 @@ function applyConversionFields(append, { projectName, exportType, elementor }) {
   }
 }
 
+function buildMultipartFormData(zipBuffer, { projectName, exportType, elementor } = {}) {
+  const fd = new FormData();
+  const blob = new Blob([zipBuffer], { type: 'application/zip' });
+  fd.append('file', blob, `${(projectName || 'project').replace(/[^a-z0-9-_]+/gi, '-')}.zip`);
+  applyConversionFields((k, v) => fd.append(k, v), { projectName, exportType, elementor });
+  return fd;
+}
+
 /** GET /api/convert/quota */
 async function getQuota() {
   const res = await fetch(url('/api/convert/quota'), { headers: authHeaders() });
@@ -97,21 +222,17 @@ async function getQuota() {
 /**
  * Small-zip path: POST /api/convert (multipart). Returns the submit payload
  * (includes jobId/project_id/status).
- * NOTE: not idempotent — never auto-retry once the request has been sent.
  */
-async function convertMultipart(zipBuffer, { projectName, exportType, elementor } = {}) {
-  const fd = new FormData();
-  const blob = new Blob([zipBuffer], { type: 'application/zip' });
-  // Field name MUST be "file"; filename MUST end in .zip (server fileFilter).
-  fd.append('file', blob, `${(projectName || 'project').replace(/[^a-z0-9-_]+/gi, '-')}.zip`);
-  applyConversionFields((k, v) => fd.append(k, v), { projectName, exportType, elementor });
-
-  const res = await fetch(url('/api/convert'), {
-    method: 'POST',
-    headers: authHeaders(), // do NOT set content-type; fetch sets the multipart boundary
-    body: fd,
-  });
-  return parseResponse(res);
+async function convertMultipart(zipBuffer, { projectName, exportType, elementor, idempotencyKey } = {}) {
+  const fields = { projectName, exportType, elementor };
+  return submitConversionRequest(
+    (headers) => fetch(url('/api/convert'), {
+      method: 'POST',
+      headers, // do NOT set content-type; fetch sets the multipart boundary
+      body: buildMultipartFormData(zipBuffer, fields),
+    }),
+    { idempotencyKey }
+  );
 }
 
 /** Large-zip step 1: POST /api/convert/upload-url */
@@ -142,25 +263,37 @@ async function putToSignedUrl(signedUrl, zipBuffer) {
   }
 }
 
-/** Large-zip step 3: POST /api/convert/from-storage. Not idempotent — don't auto-retry. */
-async function createJobFromStorage(jobId, { projectName, exportType, elementor } = {}) {
+/** Large-zip step 3: POST /api/convert/from-storage */
+async function createJobFromStorage(jobId, { projectName, exportType, elementor, idempotencyKey } = {}) {
   const body = { jobId };
   applyConversionFields((k, v) => { body[k] = v; }, { projectName, exportType, elementor });
   if (body.force_free_safe === 'true') body.force_free_safe = true;
+  const payload = JSON.stringify(body);
 
-  const res = await fetch(url('/api/convert/from-storage'), {
-    method: 'POST',
-    headers: authHeaders({ 'content-type': 'application/json' }),
-    body: JSON.stringify(body),
-  });
-  return parseResponse(res);
+  return submitConversionRequest(
+    (headers) => fetch(url('/api/convert/from-storage'), {
+      method: 'POST',
+      headers: { ...headers, 'content-type': 'application/json' },
+      body: payload,
+    }),
+    { idempotencyKey }
+  );
 }
 
 /** GET /api/convert/:jobId/status */
 async function getStatus(jobId) {
-  const res = await fetch(url(`/api/convert/${encodeURIComponent(jobId)}/status`), {
-    headers: authHeaders(),
-  });
+  let res;
+  try {
+    res = await fetch(url(`/api/convert/${encodeURIComponent(jobId)}/status`), {
+      headers: authHeaders(),
+    });
+  } catch (e) {
+    throw new ApiError(e.message || 'Network request failed', {
+      code: 'network_error',
+      status: 0,
+      details: { cause: e.cause?.code || null },
+    });
+  }
   return parseResponse(res);
 }
 
@@ -200,6 +333,8 @@ async function fetchBinary(downloadUrl) {
 
 module.exports = {
   ApiError,
+  IDEMPOTENCY_HEADER,
+  setRequestExtras,
   getQuota,
   convertMultipart,
   getUploadUrl,
@@ -209,4 +344,11 @@ module.exports = {
   getDownload,
   createPlaygroundSession,
   fetchBinary,
+  // exported for tests
+  _internals: {
+    parseSubmissionResponse,
+    submitConversionRequest,
+    submissionHeaders,
+    buildMultipartFormData,
+  },
 };

@@ -1,6 +1,6 @@
 {
   "name": "wpconvert",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "WPConvert.ai CLI — convert a website/codebase folder into a WordPress theme without leaving your terminal.",
   "license": "MIT",
   "author": "WPConvert.ai",
@@ -18,7 +18,8 @@
     "node": ">=18"
   },
   "scripts": {
-    "start": "node bin/wpconvert.js"
+    "start": "node bin/wpconvert.js",
+    "test": "node --test tests/**/*.test.js"
   },
   "dependencies": {
     "adm-zip": "^0.5.10",
