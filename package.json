@@ -1,7 +1,7 @@
 {
   "name": "wpconvert-devtools",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Open-source WPConvert CLI, MCP server, and API examples",
   "license": "MIT",
   "workspaces": [
@@ -9,7 +9,8 @@
   ],
   "scripts": {
     "lint": "npm run lint --workspaces --if-present",
-    "check": "node packages/cli/bin/wpconvert.js --help && node --check packages/mcp/src/server.mjs"
+    "test": "npm test --workspaces --if-present",
+    "check": "node packages/cli/bin/wpconvert.js --help && node --check packages/mcp/src/server.mjs && npm test --workspaces --if-present"
   },
   "engines": {
     "node": ">=18"

@@ -2,10 +2,14 @@
 
 The `wpconvert` CLI converts a local folder into a WordPress theme by calling the hosted WPConvert API.
 
+Current release: **wpconvert@0.3.0**
+
 ## Install
 
 ```bash
 npm install -g wpconvert
+# or per-invocation:
+npx wpconvert
 ```
 
 ## Authenticate
@@ -17,6 +21,27 @@ export WPCONVERT_API_KEY=wpc_live_xxx
 ```
 
 Keys are stored at `~/.wpconvert/config.json` (mode 0600).
+
+## Recommended workflow
+
+```text
+Quota / capabilities  →  Convert  →  Status  →  Download OR Preview
+```
+
+```bash
+wpconvert quota
+wpconvert quota --json
+wpconvert convert ./site
+wpconvert status <job-id>
+wpconvert download <job-id>
+wpconvert preview <job-id>
+```
+
+Before a real conversion, the CLI performs a **read-only capability preflight** (same contract as `wpconvert quota`). Explicit entitlement denial exits with code **3**. Temporary preflight/network failures warn and defer to server enforcement. Legacy backends without `capabilities` continue to work.
+
+`--dry-run` remains **local only** — no upload, no quota call, no credit.
+
+Preview-only conversions may complete with a Playground preview but **no `theme.zip` download** until you upgrade and re-convert.
 
 ## Commands
 
@@ -44,6 +69,11 @@ wpconvert convert . --type theme
 | `--max-asset-size <mb>` | Exclude files larger than N MB |
 | `--no-download` | Do not auto-download on success |
 | `--out <dir>` | Directory to save the downloaded theme |
+| `--open` | Open Playground preview in browser when ready |
+| `--no-open` | Do not auto-open browser (CI/headless) |
+| `--no-preview` | Skip Playground preview entirely |
+
+Submissions use a durable **idempotency key** so ambiguous network retries do not double-charge or duplicate jobs.
 
 ### `wpconvert status <jobId>`
 
@@ -51,7 +81,7 @@ Check conversion status.
 
 ### `wpconvert download <jobId>`
 
-Download a completed conversion.
+Download a completed conversion. Preview-only jobs return a locked-download message — upgrade and re-convert instead.
 
 ### `wpconvert preview <jobId> [--open]`
 
@@ -59,7 +89,13 @@ Create a WordPress Playground preview URL.
 
 ### `wpconvert quota`
 
-Show remaining conversions / credits.
+Show plan, credits, and the developer **capabilities** contract (conversion mode, `can_start`, download availability).
+
+```bash
+wpconvert quota --json
+```
+
+Returns the full backend quota body plus projected `summary` and `recommended_action` when capabilities are available.
 
 ### `wpconvert login`
 

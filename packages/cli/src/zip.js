@@ -116,15 +116,24 @@ function planZip(root, opts = {}) {
 
 /**
  * Build the zip in-memory from a manifest.
+ * Entry order and timestamps are normalized so identical source bytes produce
+ * identical zip bytes — required for idempotent recovery that fingerprints content.
  * @param {{relPath,absPath}[]} files
  * @returns {Buffer}
  */
 function buildZipBuffer(files) {
   const zip = new AdmZip();
-  for (const f of files) {
-    // Preserve relative directory structure inside the zip.
-    const dir = path.posix.dirname(f.relPath);
-    zip.addLocalFile(f.absPath, dir === '.' ? '' : dir);
+  const sorted = [...files].sort((a, b) => a.relPath.localeCompare(b.relPath));
+  // DOS epoch — stable across rebuilds (AdmZip rejects pre-1980 dates).
+  const stableTime = new Date(Date.UTC(1980, 0, 1, 0, 0, 0));
+  for (const f of sorted) {
+    const rel = f.relPath.replace(/\\/g, '/');
+    const data = fs.readFileSync(f.absPath);
+    zip.addFile(rel, data);
+    const entry = zip.getEntry(rel);
+    if (entry && entry.header) {
+      entry.header.time = stableTime;
+    }
   }
   return zip.toBuffer();
 }

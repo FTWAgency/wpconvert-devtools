@@ -2,10 +2,14 @@
 
 The `@wpconvert/mcp` package is a [Model Context Protocol](https://modelcontextprotocol.io) server that lets AI agents convert workspace folders into WordPress themes.
 
+Current release: **@wpconvert/mcp@0.3.0** (pins `wpconvert@0.3.0`).
+
 ## Install / run
 
 ```bash
 npx -y @wpconvert/mcp
+# deterministic pin:
+npx -y @wpconvert/mcp@0.3.0
 ```
 
 Requires `WPCONVERT_API_KEY` in the environment.
@@ -28,25 +32,58 @@ Requires `WPCONVERT_API_KEY` in the environment.
 
 Optional: `WPCONVERT_API_BASE` for non-default API host (testing).
 
+## Recommended agent workflow
+
+```text
+wpconvert_quota
+        ↓
+wpconvert_convert_folder
+        ↓
+wpconvert_check_status
+        ↓
+wpconvert_download_result  OR  wpconvert_create_preview
+        ↓
+wpconvert_explain_failure (when failed)
+```
+
 ## Tools
 
 | Tool | Purpose |
 | --- | --- |
-| `wpconvert_convert_folder` | Zip a folder and start conversion. Returns `jobId`. |
-| `wpconvert_check_status` | Poll job status (`queued` / `processing` / `done` / `failed`). |
-| `wpconvert_download_result` | Download completed conversion to disk. |
-| `wpconvert_create_preview` | Get a WordPress Playground preview URL. |
-| `wpconvert_explain_failure` | Return failure reason for a failed job. |
-| `wpconvert_quota` | Show remaining conversions / credits. |
+| `wpconvert_quota` | Quota, capabilities, `recommended_next`. Call before converting. |
+| `wpconvert_convert_folder` | Zip a folder and start conversion. Returns `jobId` + `idempotency_key`. |
+| `wpconvert_check_status` | Poll job status; returns structured fields + `recommended_next`. |
+| `wpconvert_download_result` | Download when status shows downloadable. |
+| `wpconvert_create_preview` | Playground URL when preview-only or download locked. |
+| `wpconvert_explain_failure` | Failure reason and recovery guidance. |
 
-## Typical agent flow
+## Structured responses
 
-1. `wpconvert_convert_folder` with `{ "path": "./my-site", "type": "theme" }` → `jobId`
-2. `wpconvert_check_status` with `{ "jobId": "..." }` — repeat until `done`
-3. `wpconvert_download_result` with `{ "jobId": "..." }` → saved theme `.zip`
-4. Optional: `wpconvert_create_preview` with `{ "jobId": "..." }` → Playground URL
+Tools return human-readable prose plus a trailing JSON block. Key fields:
 
-Conversions can take several minutes. Poll status rather than blocking.
+| Field | Meaning |
+| --- | --- |
+| `quota` / `summary` | Full backend quota + projected capability summary |
+| `recommended_next` | `{ tool, reason, retry_after_seconds? }` — next MCP tool to call |
+| `next_action` | String guidance on convert success (unchanged) |
+| `idempotency_key` | Omitted on preflight denial; required for ambiguous retry recovery |
+
+**Status `recommended_next` rules:**
+
+- Processing → poll `wpconvert_check_status`
+- Done + downloadable → `wpconvert_download_result`
+- Done + preview-only / download locked → `wpconvert_create_preview` (never download)
+- Failed → `wpconvert_explain_failure`
+
+## Conversion preflight
+
+`wpconvert_convert_folder` calls read-only quota preflight **after** path validation but **before** ZIP build and idempotency-key generation. Explicit `can_start: false` returns structured denial without uploading.
+
+## Idempotency
+
+- Leave `idempotency_key` blank for a new intentional conversion.
+- On ambiguous network errors, retry with the **exact** key from the prior response.
+- Do not reuse a key for changed files or a deliberate new conversion.
 
 ## Safety
 

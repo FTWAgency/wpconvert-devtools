@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-08-11
+
+### Changed
+
+- Synced `wpconvert@0.3.0` and `@wpconvert/mcp@0.3.0` with npm releases
+- CLI: capability preflight, `quota --json`, idempotent submission, deterministic ZIP, exit code 3 on entitlement denial
+- MCP: structured capabilities, `recommended_next`, status guidance, preflight before ZIP/key generation
+- Updated developer docs for quota-first workflow
+
 ## [0.1.0] - 2026-07-03
 
 ### Added
@@ -16,4 +25,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Documentation (`docs/cli.md`, `docs/mcp.md`, `docs/api.md`)
 - `SECURITY.md` and `CONTRIBUTING.md`
 
+[0.3.0]: https://github.com/FTWAgency/wpconvert-devtools/releases/tag/v0.3.0
 [0.1.0]: https://github.com/FTWAgency/wpconvert-devtools/releases/tag/v0.1.0

@@ -69,13 +69,17 @@ Paid conversions (PRO/Agency/PAYG) download `theme.zip` automatically and print 
 
 ## Quickstart (CLI)
 
+Current release: **wpconvert@0.3.0**
+
 ```bash
 npm install -g wpconvert
+# or: npx wpconvert
 wpconvert login
+wpconvert quota
 wpconvert convert . --type theme
 ```
 
-The CLI smart-zips your folder, uploads it, polls until done, then downloads `theme.zip` (paid) or opens a Playground preview (free preview-only).
+The CLI smart-zips your folder, runs a capability preflight before upload, polls until done, then downloads `theme.zip` (paid) or opens a Playground preview (free preview-only).
 
 ### Useful `convert` flags
 
@@ -109,6 +113,8 @@ Symlinks are never followed. Use `--include-env` only if you truly intend to upl
 > **Only upload projects you own or have permission to process through WPConvert.**
 
 ## MCP setup (Cursor / Claude Desktop)
+
+Current release: **@wpconvert/mcp@0.3.0** (`npx -y @wpconvert/mcp` uses npm `latest`; pin `@0.3.0` for deterministic installs).
 
 Add to your MCP config:
 
