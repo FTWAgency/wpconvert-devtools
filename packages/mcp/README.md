@@ -80,4 +80,4 @@ Free developer previews are preview-only (Playground, no ZIP download). When `do
 
 ## Dependency pin
 
-This package pins `wpconvert@0.3.0` exactly for shared capability helpers (`resolveConvertPreflight`, quota formatters).
+This package pins `wpconvert@0.3.1` exactly for shared capability helpers (`resolveConvertPreflight`, quota formatters).
