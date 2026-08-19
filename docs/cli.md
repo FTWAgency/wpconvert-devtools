@@ -2,7 +2,7 @@
 
 The `wpconvert` CLI converts a local folder into a WordPress theme by calling the hosted WPConvert API.
 
-Current release: **wpconvert@0.3.0**
+Current release: **wpconvert@0.3.1**
 
 ## Install
 

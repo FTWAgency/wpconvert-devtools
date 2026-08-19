@@ -1,6 +1,6 @@
 {
   "name": "wpconvert",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "WPConvert.ai CLI — convert a website/codebase folder into a WordPress theme without leaving your terminal.",
   "license": "MIT",
   "author": "WPConvert.ai",

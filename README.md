@@ -31,14 +31,14 @@ Portable Skill: [skills/wpconvert/SKILL.md](skills/wpconvert/SKILL.md)
 
 ## MCP setup (Cursor / Claude Desktop)
 
-Current release: **@wpconvert/mcp@0.3.0** (`npx -y @wpconvert/mcp` uses npm `latest`; pin `@0.3.0` for deterministic installs).
+Current release: **@wpconvert/mcp@0.3.1** (`npx -y @wpconvert/mcp` uses npm `latest`; pin `@0.3.1` for deterministic installs).
 
 ```json
 {
   "mcpServers": {
     "wpconvert": {
       "command": "npx",
-      "args": ["-y", "@wpconvert/mcp@0.3.0"],
+      "args": ["-y", "@wpconvert/mcp@0.3.1"],
       "env": {
         "WPCONVERT_API_KEY": "wpc_live_EXAMPLE_ONLY_NOT_A_REAL_KEY"
       }
@@ -113,7 +113,7 @@ Paid conversions (PRO/Agency/PAYG) download `theme.zip` automatically and print 
 
 ## Quickstart (CLI)
 
-Current release: **wpconvert@0.3.0**
+Current release: **wpconvert@0.3.1**
 
 ```bash
 npm install -g wpconvert
