@@ -2,14 +2,14 @@
 
 The `@wpconvert/mcp` package is a [Model Context Protocol](https://modelcontextprotocol.io) server that lets AI agents convert workspace folders into WordPress themes.
 
-Current release: **@wpconvert/mcp@0.3.0** (pins `wpconvert@0.3.0`).
+Current release: **@wpconvert/mcp@0.3.1** (pins `wpconvert@0.3.1`).
 
 ## Install / run
 
 ```bash
 npx -y @wpconvert/mcp
 # deterministic pin:
-npx -y @wpconvert/mcp@0.3.0
+npx -y @wpconvert/mcp@0.3.1
 ```
 
 Requires `WPCONVERT_API_KEY` in the environment.

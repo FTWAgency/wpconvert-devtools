@@ -1,7 +1,7 @@
 {
   "name": "wpconvert-devtools",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Open-source WPConvert CLI, MCP server, and API examples",
   "license": "MIT",
   "workspaces": [

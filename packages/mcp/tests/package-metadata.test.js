@@ -20,7 +20,7 @@ describe('MCP package metadata', () => {
   it('advertises serverInfo.version from package.json', () => {
     assert.match(serverSrc, new RegExp(`version:\\s*pkg\\.version`));
     assert.doesNotMatch(serverSrc, /0\.1\.0-beta\.0/);
-    assert.strictEqual(pkg.version, '0.3.0');
+    assert.strictEqual(pkg.version, '0.3.1');
   });
 
   it('includes mcpName for MCP Registry verification', () => {

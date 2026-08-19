@@ -12,7 +12,7 @@ license: MIT
 compatibility: Requires Node.js 18+, @wpconvert/mcp, and WPCONVERT_API_KEY. Works in Cursor, Claude Desktop, and other MCP stdio hosts.
 metadata:
   author: WPConvert.ai
-  version: "0.3.0"
+  version: "0.3.1"
 allowed-tools: wpconvert_quota wpconvert_convert_folder wpconvert_check_status wpconvert_download_result wpconvert_create_preview wpconvert_explain_failure
 ---
 
