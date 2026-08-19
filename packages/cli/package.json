@@ -4,6 +4,15 @@
   "description": "WPConvert.ai CLI — convert a website/codebase folder into a WordPress theme without leaving your terminal.",
   "license": "MIT",
   "author": "WPConvert.ai",
+  "homepage": "https://wpconvert.ai/developers",
+  "bugs": {
+    "url": "https://github.com/FTWAgency/wpconvert-devtools/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FTWAgency/wpconvert-devtools.git",
+    "directory": "packages/cli"
+  },
   "type": "commonjs",
   "bin": {
     "wpconvert": "bin/wpconvert.js"
@@ -19,7 +28,7 @@
   },
   "scripts": {
     "start": "node bin/wpconvert.js",
-    "test": "node --test tests/**/*.test.js"
+    "test": "node scripts/run-tests.cjs"
   },
   "dependencies": {
     "adm-zip": "^0.5.10",
@@ -30,6 +39,16 @@
     "theme",
     "converter",
     "wpconvert",
-    "cli"
+    "cli",
+    "lovable",
+    "cursor",
+    "v0",
+    "vite",
+    "react",
+    "frontend",
+    "static-site",
+    "ai-agent",
+    "agent",
+    "llm"
   ]
 }

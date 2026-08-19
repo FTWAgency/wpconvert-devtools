@@ -52,9 +52,9 @@ wpconvert_explain_failure (when failed)
 | --- | --- |
 | `wpconvert_quota` | Quota, capabilities, `recommended_next`. Call before converting. |
 | `wpconvert_convert_folder` | Zip a folder and start conversion. Returns `jobId` + `idempotency_key`. |
-| `wpconvert_check_status` | Poll job status; returns structured fields + `recommended_next`. |
+| `wpconvert_check_status` | Poll job status. Persisted values follow OpenAPI `ConversionStatus`; tool-layer `processing` means still in progress. |
 | `wpconvert_download_result` | Download when status shows downloadable. |
-| `wpconvert_create_preview` | Playground URL when preview-only or download locked. |
+| `wpconvert_create_preview` | Playground URL (~10 minutes, sensitive). |
 | `wpconvert_explain_failure` | Failure reason and recovery guidance. |
 
 ## Structured responses
@@ -70,7 +70,7 @@ Tools return human-readable prose plus a trailing JSON block. Key fields:
 
 **Status `recommended_next` rules:**
 
-- Processing → poll `wpconvert_check_status`
+- `queued`, pipeline stages, or tool-layer `processing` → poll `wpconvert_check_status`
 - Done + downloadable → `wpconvert_download_result`
 - Done + preview-only / download locked → `wpconvert_create_preview` (never download)
 - Failed → `wpconvert_explain_failure`
@@ -89,6 +89,6 @@ Tools return human-readable prose plus a trailing JSON block. Key fields:
 
 - Secrets excluded from zip by default (`includeEnv: true` only if truly needed)
 - Same credit system as dashboard and CLI
-- Preview URLs are capability URLs — treat as sensitive
+- Preview URLs are capability URLs (~10 minutes) — treat as sensitive
 
-See [SECURITY.md](../SECURITY.md) for more.
+See [docs/agents.md](agents.md) for the full agent integration guide and [SECURITY.md](../SECURITY.md) for more.
