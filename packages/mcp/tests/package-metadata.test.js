@@ -42,4 +42,16 @@ describe('MCP package metadata', () => {
   it('does not claim MCP package version remains 0.2.0', () => {
     assert.doesNotMatch(readme, /0\.2\.0/);
   });
+
+  it('README dependency pin matches package.json wpconvert version', () => {
+    const expected = pkg.dependencies.wpconvert;
+    assert.ok(expected, 'package.json must pin wpconvert');
+    const pinMatch = readme.match(/wpconvert@(\d+\.\d+\.\d+)/);
+    assert.ok(pinMatch, 'README must document wpconvert@X.Y.Z in Dependency pin section');
+    assert.strictEqual(
+      pinMatch[1],
+      expected,
+      `README documents wpconvert@${pinMatch[1]} but package.json pins ${expected}`,
+    );
+  });
 });
