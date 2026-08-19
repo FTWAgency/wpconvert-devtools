@@ -28,7 +28,7 @@
   },
   "scripts": {
     "start": "node bin/wpconvert.js",
-    "test": "node --test tests/**/*.test.js"
+    "test": "node scripts/run-tests.cjs"
   },
   "dependencies": {
     "adm-zip": "^0.5.10",
