@@ -12,7 +12,7 @@
     "test": "npm test --workspaces --if-present",
     "verify:openapi": "node scripts/verify-openapi.mjs",
     "check:agent-discovery": "node scripts/check-agent-discovery.mjs",
-    "check": "node scripts/check-agent-discovery.mjs && node packages/cli/bin/wpconvert.js --help && node --check packages/mcp/src/server.mjs && npm run verify:openapi && npm test --workspaces --if-present"
+    "check": "node scripts/check-agent-discovery.mjs && node scripts/ensure-mcp-publisher.cjs validate server.json && node packages/cli/bin/wpconvert.js --help && node --check packages/mcp/src/server.mjs && npm run verify:openapi && npm test --workspaces --if-present"
   },
   "engines": {
     "node": ">=18"

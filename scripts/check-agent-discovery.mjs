@@ -205,6 +205,78 @@ for (const pkgRel of ['packages/cli/package.json', 'packages/mcp/package.json'])
   }
 }
 
+// --- MCP Registry server.json drift checks ---
+const serverJsonRel = 'server.json';
+if (existsSync(path.join(ROOT, serverJsonRel))) {
+  const serverJsonText = read(serverJsonRel);
+  let serverJson;
+  try {
+    serverJson = JSON.parse(serverJsonText);
+  } catch (e) {
+    fail(`server.json is not valid JSON: ${e.message}`);
+    serverJson = null;
+  }
+
+  if (serverJson) {
+    const forbiddenVersion = /(?:\^|~|\*|latest|\d+\.x\b)/i;
+    const versionFields = [
+      ['server.json version', serverJson.version],
+      ['server.json packages[0].version', serverJson.packages?.[0]?.version],
+    ];
+    for (const [label, value] of versionFields) {
+      if (!value || typeof value !== 'string') {
+        fail(`${label} must be a concrete semver string`);
+      } else if (forbiddenVersion.test(value)) {
+        fail(`${label} must not use ranges or 'latest' (${value})`);
+      }
+    }
+
+    if (serverJson.name !== mcpPkg.mcpName) {
+      fail(`server.json name (${serverJson.name}) must match packages/mcp/package.json mcpName (${mcpPkg.mcpName})`);
+    }
+    if (serverJson.version !== mcpPkg.version) {
+      fail(`server.json version (${serverJson.version}) must match packages/mcp/package.json version (${mcpPkg.version})`);
+    }
+
+    const pkg0 = serverJson.packages?.[0];
+    if (!pkg0) {
+      fail('server.json must declare packages[0]');
+    } else {
+      if (pkg0.registryType !== 'npm') fail('server.json packages[0].registryType must be npm');
+      if (pkg0.identifier !== '@wpconvert/mcp') fail('server.json packages[0].identifier must be @wpconvert/mcp');
+      if (pkg0.version !== mcpPkg.version) {
+        fail(`server.json packages[0].version (${pkg0.version}) must match MCP package version (${mcpPkg.version})`);
+      }
+      if (pkg0.transport?.type !== 'stdio') fail('server.json packages[0].transport.type must be stdio');
+    }
+
+    const repoUrl = serverJson.repository?.url || '';
+    if (!repoUrl.includes('github.com/FTWAgency/wpconvert-devtools')) {
+      fail('server.json repository.url must point at FTWAgency/wpconvert-devtools');
+    }
+    if (serverJson.repository?.source !== 'github') {
+      fail('server.json repository.source must be github');
+    }
+
+    const apiKeyVar = pkg0?.environmentVariables?.find((v) => v.name === 'WPCONVERT_API_KEY');
+    if (!apiKeyVar) {
+      fail('server.json must declare WPCONVERT_API_KEY environment variable');
+    } else {
+      if (!apiKeyVar.isRequired) fail('WPCONVERT_API_KEY must be required');
+      if (!apiKeyVar.isSecret) fail('WPCONVERT_API_KEY must be marked secret');
+      if (apiKeyVar.format !== 'string') fail('WPCONVERT_API_KEY format must be string');
+    }
+
+    if (/wpc_live_[A-Za-z0-9_-]+/.test(serverJsonText)) {
+      fail('server.json must not contain real-looking WPConvert API keys');
+    }
+
+    if (serverJson.websiteUrl && !serverJson.websiteUrl.startsWith('https://wpconvert.ai/')) {
+      fail('server.json websiteUrl must point at wpconvert.ai developer surfaces');
+    }
+  }
+}
+
 // --- WPConvert-owned network surfaces (blocking) ---
 async function checkOwnedSurfaces() {
   const openapiRes = await fetch('https://wpconvert.ai/openapi.yaml', {
