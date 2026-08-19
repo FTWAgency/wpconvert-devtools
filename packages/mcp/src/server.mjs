@@ -26,8 +26,10 @@ import { fileURLToPath, pathToFileURL } from 'url';
 import path from 'path';
 import fs from 'fs';
 
+const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+
 // Attribute MCP requests before loading the shared API client.
-process.env.WPCONVERT_CLIENT = `mcp/${JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version}`;
+process.env.WPCONVERT_CLIENT = `mcp/${pkg.version}`;
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -109,7 +111,7 @@ const TOOLS = [
   {
     name: 'wpconvert_check_status',
     description:
-      'Check the status of a conversion job. Returns status (queued/processing/done/failed), progress, download/preview availability, and recommended_next (which tool to call next). When done and downloadable, recommended_next points to wpconvert_download_result; for preview-only jobs it points to wpconvert_create_preview instead.',
+      'Check the status of a conversion job. Returns persisted status per the OpenAPI ConversionStatus enum (queued, analyzing, building, rendering, labeling, generating, validating, uploading, done, failed). The tool-layer bucket `processing` means still in progress — it is not a persisted API value. Also returns progress, download/preview availability, and recommended_next (which tool to call next). When done and downloadable, recommended_next points to wpconvert_download_result; for preview-only jobs it points to wpconvert_create_preview instead.',
     inputSchema: {
       type: 'object',
       properties: { jobId: { type: 'string' } },
@@ -132,7 +134,7 @@ const TOOLS = [
   {
     name: 'wpconvert_create_preview',
     description:
-      'Create a WordPress Playground preview link for a completed conversion so the user can view the theme running in a live, in-browser WordPress (no local install). Returns a URL the user must open in a browser — you cannot embed or render it yourself. The link expires after ~30 minutes and grants temporary access to the theme, so treat it as sensitive.',
+      'Create a WordPress Playground preview link for a completed conversion so the user can view the theme running in a live, in-browser WordPress (no local install). Returns a URL the user must open in a browser — you cannot embed or render it yourself. The link expires after about ten minutes and grants temporary access to the theme, so treat it as sensitive.',
     inputSchema: {
       type: 'object',
       properties: { jobId: { type: 'string' } },
@@ -638,7 +640,7 @@ async function handleCall(name, args) {
 
 async function main() {
   const server = new Server(
-    { name: 'wpconvert-mcp', version: '0.1.0-beta.0' },
+    { name: 'wpconvert-mcp', version: pkg.version },
     { capabilities: { tools: {} } }
   );
 

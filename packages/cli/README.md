@@ -66,7 +66,7 @@ wpconvert preview <jobId>          # print a preview URL
 wpconvert preview <jobId> --open   # also open it in your default browser
 ```
 
-The URL boots WordPress Playground with your theme installed and activated — the same preview you get in the dashboard. Sessions expire after 30 minutes and are use-limited.
+The URL boots WordPress Playground with your theme installed and activated — the same preview you get in the dashboard. Sessions expire after about ten minutes and are use-limited.
 
 ## Other commands
 

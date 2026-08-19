@@ -6,7 +6,50 @@
 
 **Open-source developer tools for turning AI-built websites into WordPress themes from your terminal, API, or AI assistant.**
 
+> WPConvert does **not** modify your source project and does **not** require WordPress credentials. Output is either `theme.zip` (paid) or a WordPress Playground preview URL (~10 minutes).
+
 > The CLI and MCP server are open source. The WPConvert conversion engine runs on [WPConvert.ai](https://wpconvert.ai) and requires an API key. Free verified accounts can create preview-only developer conversions; downloading `theme.zip` requires PRO, Agency, or PAYG credits.
+
+## Agent quickstart (MCP)
+
+If you are a coding agent in Cursor, Claude Desktop, or another MCP host, **use the MCP tools** (do not shell out to the CLI in the same session).
+
+1. Configure `@wpconvert/mcp` — see [examples/mcp/](examples/mcp/) and [docs/agents.md](docs/agents.md)
+2. `wpconvert_quota` — inspect capabilities before converting
+3. `wpconvert_convert_folder` → `wpconvert_check_status` → `wpconvert_download_result` or `wpconvert_create_preview`
+
+| MCP tool | Purpose |
+| --- | --- |
+| `wpconvert_quota` | Capabilities, credits, `recommended_next` |
+| `wpconvert_convert_folder` | Zip folder + start conversion |
+| `wpconvert_check_status` | Poll job status |
+| `wpconvert_download_result` | Download `theme.zip` when allowed |
+| `wpconvert_create_preview` | Playground URL when preview-only |
+| `wpconvert_explain_failure` | Failure reason + recovery |
+
+Portable Skill: [skills/wpconvert/SKILL.md](skills/wpconvert/SKILL.md)
+
+## MCP setup (Cursor / Claude Desktop)
+
+Current release: **@wpconvert/mcp@0.3.0** (`npx -y @wpconvert/mcp` uses npm `latest`; pin `@0.3.0` for deterministic installs).
+
+```json
+{
+  "mcpServers": {
+    "wpconvert": {
+      "command": "npx",
+      "args": ["-y", "@wpconvert/mcp@0.3.0"],
+      "env": {
+        "WPCONVERT_API_KEY": "wpc_live_EXAMPLE_ONLY_NOT_A_REAL_KEY"
+      }
+    }
+  }
+}
+```
+
+Optional: set `WPCONVERT_API_BASE` to point at a non-default API host (testing only).
+
+See [docs/mcp.md](docs/mcp.md) and [docs/agents.md](docs/agents.md) for the full agent workflow.
 
 This repository contains the open-source [WPConvert](https://wpconvert.ai) developer tools:
 
@@ -15,7 +58,7 @@ This repository contains the open-source [WPConvert](https://wpconvert.ai) devel
 | [`wpconvert`](packages/cli) | CLI — convert a local folder to a WordPress theme |
 | [`@wpconvert/mcp`](packages/mcp) | MCP server — convert from Cursor, Claude Desktop, or other MCP clients |
 | [`examples/`](examples) | API usage examples (curl + Node.js) |
-| [`docs/`](docs) | CLI, MCP, and API reference |
+| [`docs/`](docs) | CLI, MCP, API reference, and [agent integration guide](docs/agents.md) |
 | [`openapi.yaml`](openapi.yaml) | Machine-readable OpenAPI 3.1 Developer API contract (mirrored from production) |
 
 These tools are thin clients that call the hosted API over HTTPS.
@@ -113,30 +156,6 @@ Symlinks are never followed. Use `--include-env` only if you truly intend to upl
 
 > **Only upload projects you own or have permission to process through WPConvert.**
 
-## MCP setup (Cursor / Claude Desktop)
-
-Current release: **@wpconvert/mcp@0.3.0** (`npx -y @wpconvert/mcp` uses npm `latest`; pin `@0.3.0` for deterministic installs).
-
-Add to your MCP config:
-
-```json
-{
-  "mcpServers": {
-    "wpconvert": {
-      "command": "npx",
-      "args": ["-y", "@wpconvert/mcp"],
-      "env": {
-        "WPCONVERT_API_KEY": "wpc_live_EXAMPLE_ONLY_NOT_A_REAL_KEY"
-      }
-    }
-  }
-}
-```
-
-Optional: set `WPCONVERT_API_BASE` to point at a non-default API host (testing only).
-
-See [docs/mcp.md](docs/mcp.md) for tool reference and typical agent flow.
-
 ## Developer API (REST)
 
 WPConvert offers three developer surfaces: **REST API**, **CLI**, and **MCP**. All call the same hosted API at `https://api.wpconvert.ai`.
@@ -146,7 +165,8 @@ WPConvert offers three developer surfaces: **REST API**, **CLI**, and **MCP**. A
 | **OpenAPI 3.1** | [`openapi.yaml`](openapi.yaml) — canonical machine-readable contract (mirrored from production) |
 | **REST guide** | [`docs/api.md`](docs/api.md) — workflows, capabilities, idempotency, status, download, Playground |
 | **CLI** | [`docs/cli.md`](docs/cli.md) — `wpconvert quota`, `wpconvert convert ./site` |
-| **MCP** | [`docs/mcp.md`](docs/mcp.md) — agent tools for Cursor, Claude Desktop, etc. |
+| **MCP** | [`docs/mcp.md`](docs/mcp.md) — six MCP tools for Cursor, Claude Desktop, etc. |
+| **Agents** | [`docs/agents.md`](docs/agents.md) — capability gate, idempotency, preview vs download |
 
 > `openapi.yaml` is a **byte-identical mirror** of the canonical WPConvert API contract maintained in the private application repository. Do not independently modify API behavior or schemas here. Contract changes originate with the production API and are mirrored into this repository.
 

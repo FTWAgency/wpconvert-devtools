@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "wpconvert": {
+      "command": "npx",
+      "args": ["-y", "@wpconvert/mcp@0.3.0"],
+      "env": {
+        "WPCONVERT_API_KEY": "wpc_live_EXAMPLE_ONLY_NOT_A_REAL_KEY"
+      }
+    }
+  }
+}

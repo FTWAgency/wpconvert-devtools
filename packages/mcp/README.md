@@ -11,9 +11,9 @@ It's a thin wrapper over the same HTTP API and smart-zip logic as the `wpconvert
 | Tool | Purpose |
 | --- | --- |
 | `wpconvert_convert_folder` | Zip a folder (excluding `node_modules`, build output, secrets) and start a conversion. Returns a `jobId`. |
-| `wpconvert_check_status` | Poll a job's status (`queued` / `processing` / `done` / `failed`). |
+| `wpconvert_check_status` | Poll a job's status. Persisted values follow the OpenAPI `ConversionStatus` enum (`queued`, pipeline stages, `done`, `failed`). The tool-layer bucket `processing` means still in progress — not a persisted API value. |
 | `wpconvert_download_result` | Download a completed conversion to disk. |
-| `wpconvert_create_preview` | Get a WordPress Playground URL to view the theme in a live in-browser WordPress. The link expires (~30 min) and is sensitive — open it in a browser. |
+| `wpconvert_create_preview` | Get a WordPress Playground URL to view the theme in a live in-browser WordPress. The link expires after about ten minutes and is sensitive — open it in a browser. |
 | `wpconvert_explain_failure` | Return the failure reason for a failed job. |
 | `wpconvert_quota` | Show quota, capabilities, and `recommended_next`. Call before converting. |
 
@@ -62,7 +62,7 @@ Tools return human-readable prose plus a trailing JSON block (same `ok()` / `fai
 
 **Status `recommended_next` rules:**
 
-- `queued` / `processing` → `wpconvert_check_status` (poll)
+- `queued`, pipeline stages, or tool-layer `processing` → `wpconvert_check_status` (poll)
 - `done` + downloadable → `wpconvert_download_result`
 - `done` + preview-only / download locked → `wpconvert_create_preview` (never download)
 - `failed` → `wpconvert_explain_failure`
@@ -80,6 +80,4 @@ Free developer previews are preview-only (Playground, no ZIP download). When `do
 
 ## Dependency pin
 
-This package pins `wpconvert@0.3.0` exactly for shared capability helpers (`resolveConvertPreflight`, quota formatters). MCP package version remains **0.2.0** until a separate release review.
-
-Billing, quotas, and refunds are identical to the dashboard and CLI for paid conversions. Free developer previews are preview-only (Playground, no ZIP download) and limited to 3 lifetime attempts per account. Secrets are excluded from the zip by default (set `includeEnv: true` only if you truly need them).
+This package pins `wpconvert@0.3.0` exactly for shared capability helpers (`resolveConvertPreflight`, quota formatters).
