@@ -20,6 +20,7 @@ id_ed25519*
 dist/
 build/
 out/
+.cache/
 
 # Logs
 *.log

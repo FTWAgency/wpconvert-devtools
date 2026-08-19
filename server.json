@@ -1,0 +1,33 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "ai.wpconvert/mcp",
+  "title": "WPConvert MCP",
+  "description": "Convert frontend folders to WordPress themes: quota, convert, status, download, preview, failures.",
+  "websiteUrl": "https://wpconvert.ai/developers",
+  "repository": {
+    "url": "https://github.com/FTWAgency/wpconvert-devtools",
+    "source": "github",
+    "subfolder": "packages/mcp"
+  },
+  "version": "0.3.1",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@wpconvert/mcp",
+      "version": "0.3.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "WPCONVERT_API_KEY",
+          "description": "WPConvert API key from Settings → API & CLI on wpconvert.ai. Required for all MCP tools.",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": true,
+          "placeholder": "Paste your API key from the WPConvert dashboard"
+        }
+      ]
+    }
+  ]
+}
