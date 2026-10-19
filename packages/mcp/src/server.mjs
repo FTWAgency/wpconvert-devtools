@@ -675,8 +675,15 @@ export {
   fail,
 };
 
-const isDirectRun = process.argv[1]
-  && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
+// npx runs node_modules/.bin/wpconvert-mcp, a symlink, so compare real paths.
+const isDirectRun = (() => {
+  if (!process.argv[1]) return false;
+  try {
+    return pathToFileURL(fs.realpathSync(path.resolve(process.argv[1]))).href === import.meta.url;
+  } catch {
+    return false;
+  }
+})();
 
 if (isDirectRun) {
   main().catch((e) => {
