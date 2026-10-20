@@ -1,6 +1,6 @@
 # @wpconvert/mcp
 
-A [Model Context Protocol](https://modelcontextprotocol.io) server for [WPConvert.ai](https://wpconvert.ai). It lets an AI agent (Cursor, Claude Desktop, etc.) convert the current workspace folder into a WordPress theme — no manual zipping required.
+A [Model Context Protocol](https://modelcontextprotocol.io) server for [WPConvert.ai](https://wpconvert.ai). It lets an AI agent (Cursor, Claude Code, Claude Desktop, etc.) convert the current workspace folder into a WordPress theme — no manual zipping required.
 
 It's a thin wrapper over the same HTTP API and smart-zip logic as the `wpconvert` CLI.
 
@@ -32,6 +32,14 @@ It's a thin wrapper over the same HTTP API and smart-zip logic as the `wpconvert
   }
 }
 ```
+
+## Configure (Claude Code)
+
+```bash
+claude mcp add wpconvert --scope user -e WPCONVERT_API_KEY=wpc_live_xxx -- npx -y @wpconvert/mcp
+```
+
+`--scope user` makes the server available in every project. Put the server name before `-e`; `-e` accepts several values and would read the name as another variable. Confirm with `claude mcp list` (`wpconvert … ✔ Connected`) or `/mcp` inside a session.
 
 Optional: set `WPCONVERT_API_BASE` to point at a non-default API host (testing).
 

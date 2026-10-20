@@ -12,7 +12,7 @@
 
 ## Agent quickstart (MCP)
 
-If you are a coding agent in Cursor, Claude Desktop, or another MCP host, **use the MCP tools** (do not shell out to the CLI in the same session).
+If you are a coding agent in Cursor, Claude Code, Claude Desktop, or another MCP host, **use the MCP tools** (do not shell out to the CLI in the same session).
 
 1. Configure `@wpconvert/mcp` — see [examples/mcp/](examples/mcp/) and [docs/agents.md](docs/agents.md)
 2. `wpconvert_quota` — inspect capabilities before converting
@@ -29,7 +29,7 @@ If you are a coding agent in Cursor, Claude Desktop, or another MCP host, **use 
 
 Portable Skill: [skills/wpconvert/SKILL.md](skills/wpconvert/SKILL.md)
 
-## MCP setup (Cursor / Claude Desktop)
+## MCP setup (Cursor / Claude Code / Claude Desktop)
 
 Current release: **@wpconvert/mcp@0.3.2** (`npx -y @wpconvert/mcp` uses npm `latest`; pin `@0.3.2` for deterministic installs).
 
@@ -47,6 +47,14 @@ Current release: **@wpconvert/mcp@0.3.2** (`npx -y @wpconvert/mcp` uses npm `lat
 }
 ```
 
+**Claude Code** — one command, no config file:
+
+```bash
+claude mcp add wpconvert --scope user -e WPCONVERT_API_KEY=wpc_live_EXAMPLE_ONLY_NOT_A_REAL_KEY -- npx -y @wpconvert/mcp@0.3.2
+```
+
+`--scope user` makes it available in every project. Confirm with `claude mcp list` (`wpconvert … ✔ Connected`) or `/mcp` in a session.
+
 Optional: set `WPCONVERT_API_BASE` to point at a non-default API host (testing only).
 
 See [docs/mcp.md](docs/mcp.md) and [docs/agents.md](docs/agents.md) for the full agent workflow.
@@ -56,7 +64,7 @@ This repository contains the open-source [WPConvert](https://wpconvert.ai) devel
 | Package | Description |
 | --- | --- |
 | [`wpconvert`](packages/cli) | CLI — convert a local folder to a WordPress theme |
-| [`@wpconvert/mcp`](packages/mcp) | MCP server — convert from Cursor, Claude Desktop, or other MCP clients |
+| [`@wpconvert/mcp`](packages/mcp) | MCP server — convert from Cursor, Claude Code, Claude Desktop, or other MCP clients |
 | [`examples/`](examples) | API usage examples (curl + Node.js) |
 | [`docs/`](docs) | CLI, MCP, API reference, and [agent integration guide](docs/agents.md) |
 | [`openapi.yaml`](openapi.yaml) | Machine-readable OpenAPI 3.1 Developer API contract (mirrored from production) |
