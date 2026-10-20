@@ -2,7 +2,7 @@
 
 The `wpconvert` CLI converts a local folder into a WordPress theme by calling the hosted WPConvert API.
 
-Current release: **wpconvert@0.3.1**
+Current release: **wpconvert@0.4.0**
 
 ## Install
 
@@ -15,12 +15,15 @@ npx wpconvert
 ## Authenticate
 
 ```bash
-wpconvert login
+wpconvert login            # sign in through your browser and type the code shown
+wpconvert login --paste    # or paste an existing key (input hidden)
 # or for CI:
 export WPCONVERT_API_KEY=wpc_live_xxx
 ```
 
-Keys are stored at `~/.wpconvert/config.json` (mode 0600).
+Keys and guest sessions are stored at `~/.wpconvert/config.json` (mode 0600). `WPCONVERT_API_KEY` takes priority over a saved key.
+
+No key at all? `wpconvert convert .` offers a **free guest preview**: a link and code, one browser check, then a few Playground previews for 24 hours (no account). Guest previews can't be downloaded until bought; they are kept for 7 days. `--guest` skips the question in scripts; CI never starts a guest session.
 
 ## Recommended workflow
 
@@ -97,9 +100,17 @@ wpconvert quota --json
 
 Returns the full backend quota body plus projected `summary` and `recommended_action` when capabilities are available.
 
-### `wpconvert login`
+### `wpconvert login [--paste | --key <key>]`
 
-Store your API key locally.
+Sign in through your browser (default) and save a new API key, or store an existing key.
+
+### `wpconvert plans`
+
+Every paid option, what it includes, and today's price. No sign-in needed.
+
+### `wpconvert unlock <jobId>` / `wpconvert upgrade`
+
+Buy this theme (Starter or PAYG credits) or a plan that unlocks it, then download it; `upgrade` buys a plan or credits without a theme. Shows a numbered menu, or pick with `--starter`, `--pro`, `--agency`, `--payg <1|5|10|30>`, plus `--yearly`. Every purchase confirms the amount first (`--yes` skips it), opens Stripe Checkout in your browser, and waits up to 15 minutes for the payment. Signs you in first if needed. No free trial through the terminal. Exit code **2** when a choice is needed but there is no terminal to ask.
 
 ## Site root detection
 

@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- `@wpconvert/mcp` configured with `WPCONVERT_API_KEY`
+- `@wpconvert/mcp` configured (`WPCONVERT_API_KEY` optional; without it, use `wpconvert_connect` and show the user the link)
 - User's frontend project path (run from project root when possible)
 - Framework sites built (`npm run build`) when detection requires it
 

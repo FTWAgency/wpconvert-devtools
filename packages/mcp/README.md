@@ -4,7 +4,7 @@ A [Model Context Protocol](https://modelcontextprotocol.io) server for [WPConver
 
 It's a thin wrapper over the same HTTP API and smart-zip logic as the `wpconvert` CLI.
 
-> Requires Node.js >= 18 and a WPConvert API key. Full downloadable conversions require Pro/Agency or PAYG credits. Free verified accounts may also use preview-only keys (up to 3 lifetime Playground previews) when enabled on the server.
+> Requires Node.js >= 18. No API key is needed to start: the agent can give you a link for a few free guest previews (one quick human check in the browser, no account), or for signing in. Downloads need Starter, Pro, Agency or pay-as-you-go credits, which you can buy from the same conversation.
 
 ## Tools
 
@@ -15,7 +15,21 @@ It's a thin wrapper over the same HTTP API and smart-zip logic as the `wpconvert
 | `wpconvert_download_result` | Download a completed conversion to disk. |
 | `wpconvert_create_preview` | Get a WordPress Playground URL to view the theme in a live in-browser WordPress. The link expires after about ten minutes and is sensitive — open it in a browser. |
 | `wpconvert_explain_failure` | Return the failure reason for a failed job. |
-| `wpconvert_quota` | Show quota, capabilities, and `recommended_next`. Call before converting. |
+| `wpconvert_quota` | Show quota, capabilities, and `recommended_next`. Call before converting. For a guest session, shows free previews left. |
+| `wpconvert_connect` | Start a browser link: `kind: "guest"` (free previews, no account) or `kind: "login"` (sign in; saves a new API key locally). Returns a link and code for you to open — the agent never opens it. |
+| `wpconvert_connect_status` | Check whether you finished the link (waits ~20s), and how WPConvert is connected now. |
+| `wpconvert_plans` | Every option with what it includes and today's price: Starter (one theme), Pro, Agency (monthly/yearly), pay-as-you-go packs. Pass `jobId` for options to unlock that conversion. |
+| `wpconvert_checkout` | A Stripe checkout link for the option you picked. Needs a signed-in account. You open and pay; the agent never pays. |
+
+## Configure (Claude Code)
+
+```bash
+claude mcp add wpconvert --scope user -- npx -y @wpconvert/mcp
+```
+
+`--scope user` makes the server available in every project. Confirm with `claude mcp list` (`wpconvert … ✔ Connected`) or `/mcp` inside a session. Then ask the agent to convert a folder; it will offer a guest link or a sign-in link.
+
+To use an existing API key instead, add it before the `--`, after the server name: `claude mcp add wpconvert --scope user -e WPCONVERT_API_KEY=wpc_live_xxx -- npx -y @wpconvert/mcp` (`-e` accepts several values, so put the name first).
 
 ## Configure (Cursor / Claude Desktop)
 
@@ -24,24 +38,15 @@ It's a thin wrapper over the same HTTP API and smart-zip logic as the `wpconvert
   "mcpServers": {
     "wpconvert": {
       "command": "npx",
-      "args": ["-y", "@wpconvert/mcp"],
-      "env": {
-        "WPCONVERT_API_KEY": "wpc_live_xxx"
-      }
+      "args": ["-y", "@wpconvert/mcp"]
     }
   }
 }
 ```
 
-## Configure (Claude Code)
+Optional `env`: `WPCONVERT_API_KEY` (an existing key; it takes precedence over a key saved by sign-in) and `WPCONVERT_API_BASE` (a non-default API host, for testing).
 
-```bash
-claude mcp add wpconvert --scope user -e WPCONVERT_API_KEY=wpc_live_xxx -- npx -y @wpconvert/mcp
-```
-
-`--scope user` makes the server available in every project. Put the server name before `-e`; `-e` accepts several values and would read the name as another variable. Confirm with `claude mcp list` (`wpconvert … ✔ Connected`) or `/mcp` inside a session.
-
-Optional: set `WPCONVERT_API_BASE` to point at a non-default API host (testing).
+Sign-in and guest sessions are saved in `~/.wpconvert/config.json` (mode 0600), shared with the `wpconvert` CLI. Tool results never include the key, the guest token or the link's device code.
 
 ## Typical agent flow
 
@@ -54,6 +59,20 @@ Optional: set `WPCONVERT_API_BASE` to point at a non-default API host (testing).
 5. When preview-only or download locked → `wpconvert_create_preview` for a WordPress Playground URL (no ZIP)
 
 If conversion is blocked (`can_start: false`), `wpconvert_convert_folder` returns a structured denial **before** zipping or submitting. Call `wpconvert_quota` to review `recommended_action`.
+
+**No key yet (guest):**
+
+1. `wpconvert_convert_folder` → `recommended_next: wpconvert_connect { "kind": "guest" }`
+2. `wpconvert_connect { "kind": "guest" }` → the agent shows you a link and code; you open it and confirm you're human
+3. `wpconvert_connect_status` → `connected`, with free previews left
+4. `wpconvert_convert_folder`, `wpconvert_check_status`, then `wpconvert_create_preview` to see it in WordPress Playground (guest uploads up to 50MB zipped; never retried automatically, since each upload uses a preview)
+
+**Buying (download a theme, or a plan):**
+
+1. `wpconvert_plans { "jobId": "..." }` → every option and price; the agent asks you which one
+2. Not signed in? `wpconvert_connect { "kind": "login" }`, then `wpconvert_connect_status`, then `wpconvert_plans` again
+3. `wpconvert_checkout` with your choice's `checkout_arguments` → a Stripe link you open and pay
+4. `wpconvert_check_status` → once paid, `recommended_next` is `wpconvert_download_result`. Guest themes you buy move to your account.
 
 ## Capabilities and structured responses
 
@@ -72,7 +91,8 @@ Tools return human-readable prose plus a trailing JSON block (same `ok()` / `fai
 
 - `queued`, pipeline stages, or tool-layer `processing` → `wpconvert_check_status` (poll)
 - `done` + downloadable → `wpconvert_download_result`
-- `done` + preview-only / download locked → `wpconvert_create_preview` (never download)
+- `done` + preview-only / download locked → `wpconvert_create_preview` (never download); the reason names `wpconvert_plans` for unlocking
+- `done` + guest (`guest: true`, `remaining_previews`) → `wpconvert_create_preview`, then `wpconvert_plans` to buy
 - `failed` → `wpconvert_explain_failure`
 
 ## Idempotency recovery
@@ -84,8 +104,8 @@ Tools return human-readable prose plus a trailing JSON block (same `ok()` / `fai
 
 ## Preview-only / download locked
 
-Free developer previews are preview-only (Playground, no ZIP download). When `download_available` is `false` or `preview_only` is `true`, status and download tools recommend `wpconvert_create_preview` or `wpconvert_quota` — not download retry.
+Free developer previews and guest previews are preview-only (Playground, no ZIP download). When `download_available` is `false` or `preview_only` is `true`, status and download tools recommend `wpconvert_create_preview`, `wpconvert_plans` or `wpconvert_quota` — not download retry.
 
 ## Dependency pin
 
-This package pins `wpconvert@0.3.1` exactly for shared capability helpers (`resolveConvertPreflight`, quota formatters).
+This package pins `wpconvert@0.4.0` exactly for shared capability helpers (`resolveConvertPreflight`, quota formatters).

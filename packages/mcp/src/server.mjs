@@ -7,7 +7,9 @@
  * current workspace folder into a WordPress theme without the user ever making a
  * zip.
  *
- * Auth: WPCONVERT_API_KEY env (required). Optional WPCONVERT_API_BASE override.
+ * Auth: WPCONVERT_API_KEY env, or the key / guest session saved in
+ * ~/.wpconvert/config.json (by `wpconvert login` or wpconvert_connect).
+ * Optional WPCONVERT_API_BASE override.
  *
  * Tools:
  *   - wpconvert_convert_folder   zip a folder + start a conversion (returns jobId)
@@ -15,6 +17,8 @@
  *   - wpconvert_download_result  download a completed conversion to disk
  *   - wpconvert_explain_failure  return the failure reason for a failed job
  *   - wpconvert_quota            show remaining conversions / credits
+ *   - wpconvert_connect(_status) guest previews or browser sign-in, no key needed
+ *   - wpconvert_plans / wpconvert_checkout  show options, then pay for the user's choice
  *
  * NOTE: convert returns a jobId immediately rather than blocking; the agent should
  * poll wpconvert_check_status until status is "done", then download. (Conversions
@@ -41,6 +45,7 @@ import {
 // Reuse the CLI's CJS modules (api client, smart-zip, ignore rules, idempotency).
 const require = createRequire(import.meta.url);
 const api = require('wpconvert/src/api');
+const config = require('wpconvert/src/config');
 const { planZip, buildZipBuffer, formatBytes } = require('wpconvert/src/zip');
 const { detectSiteRoot, BUILD_DIRS } = require('wpconvert/src/detect');
 const {
@@ -61,35 +66,24 @@ import {
   TOOL_STATUS,
   STATUS_POLL_SECONDS,
 } from './capabilities.mjs';
+import { ok, fail, redactSecrets } from './result.mjs';
+import { ACCOUNT_TOOLS, handleAccountCall, connectionSummary, _internals as accountInternals } from './account.mjs';
 
 const MULTIPART_CAP_MB = 50;
+const GUEST_CAP_MB = 50;
 const VALID_TYPES = ['theme'];
 const COMING_SOON_TYPES = ['elementor', 'gutenberg'];
 const PREVIEW_LOCKED_DOWNLOAD_COPY =
   'Download locked. Upgrade to PRO or add PAYG credits, then re-run this conversion to download theme.zip.';
 
-function ok(text, data) {
-  const body = data ? `${text}\n\n${JSON.stringify(data, null, 2)}` : text;
-  return { content: [{ type: 'text', text: body }] };
-}
-
-function fail(text, data) {
-  const body = data ? `${text}\n\n${JSON.stringify(data, null, 2)}` : text;
-  return { content: [{ type: 'text', text: body }], isError: true };
-}
-
-function redactSecrets(text) {
-  if (!text) return text;
-  return String(text)
-    .replace(/wpc_live_[A-Za-z0-9_-]+/g, '[redacted-api-key]')
-    .replace(/WPCONVERT_API_KEY[=:\s]+\S+/gi, 'WPCONVERT_API_KEY=[redacted]');
-}
+const GUEST_DOWNLOAD_COPY =
+  'Guest previews cannot be downloaded. To download this theme, call wpconvert_plans with this jobId and let the user choose how to unlock it (Starter unlocks just this theme).';
 
 const TOOLS = [
   {
     name: 'wpconvert_convert_folder',
     description:
-      'Zip a local folder (excluding node_modules, build output, and secrets by default) and start a WordPress theme conversion. Call wpconvert_quota first to review capabilities (mode, credits, download availability). Returns a jobId and an idempotency_key. Leave idempotency_key blank for a new intentional conversion. If a prior call may have timed out or returned an ambiguous network error, retry with the exact idempotency_key returned by that prior call — do not omit it and do not invent a new one. Do not reuse a key for changed files, options, or a deliberate new conversion. Once you have a jobId, poll wpconvert_check_status until "done", then follow recommended_next for download or preview.',
+      'Zip a local folder (excluding node_modules, build output, and secrets by default) and start a WordPress theme conversion. Call wpconvert_quota first to review capabilities (mode, credits, download availability). Returns a jobId and an idempotency_key. Leave idempotency_key blank for a new intentional conversion. If a prior call may have timed out or returned an ambiguous network error, retry with the exact idempotency_key returned by that prior call — do not omit it and do not invent a new one. Do not reuse a key for changed files, options, or a deliberate new conversion. Once you have a jobId, poll wpconvert_check_status until "done", then follow recommended_next for download or preview. Without an API key it uses the guest session from wpconvert_connect (free previews, up to 50MB zipped); with neither it returns recommended_next wpconvert_connect.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -154,9 +148,10 @@ const TOOLS = [
   {
     name: 'wpconvert_quota',
     description:
-      'Show account quota, capabilities (conversion mode, can_start, download availability), and recommended_next. Call this before wpconvert_convert_folder to understand what the next conversion will consume.',
+      'Show account quota, capabilities (conversion mode, can_start, download availability), and recommended_next. Call this before wpconvert_convert_folder to understand what the next conversion will consume. For a guest session it shows the free previews left.',
     inputSchema: { type: 'object', properties: {} },
   },
+  ...ACCOUNT_TOOLS,
 ];
 
 /**
@@ -352,6 +347,10 @@ async function convertFolder(args) {
   });
   if (files.length === 0) return fail('No files to upload after applying ignore rules.');
 
+  if (!api.hasApiKey()) {
+    return convertAsGuest({ files, totalBytes, excludedLarge, projectName, detectNote });
+  }
+
   const preflight = await resolveConvertPreflight(() => api.getQuota());
 
   if (preflight.outcome === 'auth_error') {
@@ -466,11 +465,105 @@ async function convertFolder(args) {
   );
 }
 
+const MISSING_CREDENTIALS_COPY =
+  'No API key or guest session. Call wpconvert_connect with kind "guest" for free previews without an account, or "login" to sign in to WPConvert. ' +
+  'Set WPCONVERT_API_KEY in the MCP server environment to use an existing key instead.';
+
+/**
+ * Guest conversion: one free preview per upload, so it is never retried
+ * (a retry after an ambiguous failure could spend two).
+ */
+async function convertAsGuest({ files, totalBytes, excludedLarge, projectName, detectNote }) {
+  const session = config.getGuestSession();
+  if (!session) {
+    return fail(MISSING_CREDENTIALS_COPY, {
+      ok: false,
+      error: { code: 'missing_credentials', message: 'No API key or guest session.', retry_safe: false },
+      recommended_next: { tool: 'wpconvert_connect', arguments: { kind: 'guest' }, reason: 'Start a free guest preview (the user confirms once in the browser).' },
+    });
+  }
+  if (!config.guestCanConvert(session)) {
+    return fail('This guest session can no longer start conversions. Earlier guest previews can still be bought with wpconvert_plans; to keep converting, sign in with wpconvert_connect kind "login".', {
+      ok: false,
+      error: { code: 'guest_token_expired', message: 'Guest convert window ended.', retry_safe: false },
+      recommended_next: { tool: 'wpconvert_connect', arguments: { kind: 'login' }, reason: 'Sign in to keep converting.' },
+    });
+  }
+
+  const zipBuffer = buildZipBuffer(files);
+  const zipMB = zipBuffer.length / (1024 * 1024);
+  if (zipMB > GUEST_CAP_MB) {
+    return fail(`Zip is ${zipMB.toFixed(1)}MB; guest previews accept up to ${GUEST_CAP_MB}MB. No preview was used. Exclude large files (maxAssetSizeMB) or sign in with wpconvert_connect kind "login".`);
+  }
+
+  let submit;
+  try {
+    submit = await api.convertGuest(zipBuffer, { projectName });
+  } catch (e) {
+    if (e && e.name === 'ApiError') {
+      const message = redactSecrets(renderApiError(e));
+      const ambiguous = e.code === 'network_error';
+      return fail(
+        ambiguous
+          ? `${message}\nThe upload may have been accepted. Do not retry automatically, since each guest upload uses a preview; ask the user first.`
+          : message,
+        {
+          ok: false,
+          error: { code: e.code || 'error', message, retry_safe: false },
+          recommended_next: e.code && e.code.startsWith('guest_')
+            ? { tool: 'wpconvert_connect', arguments: { kind: 'login' }, reason: 'Sign in to keep converting.' }
+            : undefined,
+        }
+      );
+    }
+    throw e;
+  }
+
+  const jobId = submit.jobId || submit.project_id || submit.id;
+  const remaining = Number.isInteger(submit.remaining_previews) ? submit.remaining_previews : null;
+  const warn = excludedLarge.length ? ` (excluded ${excludedLarge.length} large file(s))` : '';
+  const text =
+    detectNote +
+    `Guest preview queued. jobId=${jobId}\n` +
+    `Zipped ${files.length} files (${formatBytes(totalBytes)} uncompressed)${warn}.\n` +
+    `${remaining != null ? `${remaining} free preview(s) left. ` : ''}Guest conversions can be previewed, not downloaded, until bought.\n` +
+    'Poll wpconvert_check_status with this jobId until status is "done", then call wpconvert_create_preview.';
+  return ok(text, {
+    job_id: jobId,
+    project_id: jobId,
+    status: submit.status || 'queued',
+    guest: true,
+    preview_only: true,
+    remaining_previews: remaining,
+    next_action: 'Call wpconvert_check_status with the job ID.',
+    recommended_next: { tool: TOOL_STATUS, reason: 'Guest preview submitted. Poll wpconvert_check_status until done.', retry_after_seconds: STATUS_POLL_SECONDS },
+  });
+}
+
+function guestDownloadDenied(jobId) {
+  return fail(GUEST_DOWNLOAD_COPY, {
+    ok: false,
+    error: { code: 'upgrade_required', message: GUEST_DOWNLOAD_COPY, reason: 'guest_preview', retry_safe: false },
+    recommended_next: { tool: 'wpconvert_plans', arguments: { jobId }, reason: 'Show the user the ways to unlock this theme.' },
+  });
+}
+
 function renderApiError(e) {
   const d = (e && e.details) || {};
   switch (e && e.code) {
     case 'missing_credentials':
-      return 'No API key configured. Set WPCONVERT_API_KEY in the MCP server environment.';
+      return MISSING_CREDENTIALS_COPY;
+    case 'guest_previews_used':
+    case 'guest_token_expired':
+    case 'guest_capacity':
+    case 'guest_token_invalid':
+      return `${e.message || 'Guest previews are not available right now.'} To keep converting, sign in with wpconvert_connect kind "login".`;
+    case 'link_expired':
+      return 'The link expired. Call wpconvert_connect again for a new one.';
+    case 'key_limit_reached':
+      return e.message || 'This account has the maximum number of API keys. Revoke one in the WPConvert dashboard, then connect again.';
+    case 'already_subscribed':
+      return `${e.message || 'This account already has a subscription.'}${d.portal_url ? ` Manage the plan: ${d.portal_url}` : ''}`;
     case 'invalid_api_key':
       return 'Invalid or revoked API key.';
     case 'insufficient_credits':
@@ -509,6 +602,8 @@ function renderApiError(e) {
 
 async function handleCall(name, args) {
   api.setRequestExtras({ tool: name });
+  const account = await handleAccountCall(name, args);
+  if (account) return account;
   switch (name) {
     case 'wpconvert_convert_folder':
       return convertFolder(args);
@@ -517,16 +612,19 @@ async function handleCall(name, args) {
       const s = await api.getStatus(args.jobId);
       const projected = projectStatusResponse(s);
       const previewOnly = s.preview_only || s.conversion_mode === 'preview_only';
+      const lockedCopy = projected.guest ? GUEST_DOWNLOAD_COPY : PREVIEW_LOCKED_DOWNLOAD_COPY;
       const text =
         `status=${s.status}${s.progress != null ? ` progress=${s.progress}%` : ''}` +
+        `${projected.guest && projected.remaining_previews != null ? `\nguest previews left: ${projected.remaining_previews}` : ''}` +
         `${s.status === 'done' && s.preview_available ? '\npreview: available (call wpconvert_create_preview)' : ''}` +
-        `${previewOnly && s.status === 'done' ? `\n${PREVIEW_LOCKED_DOWNLOAD_COPY}` : ''}` +
+        `${(previewOnly || projected.guest) && s.status === 'done' ? `\n${lockedCopy}` : ''}` +
         `${s.status === 'failed' && s.error ? `\nerror: ${s.error}` : ''}` +
         `\nNext: ${projected.recommended_next.tool} — ${projected.recommended_next.reason}`;
       return ok(text, projected);
     }
 
     case 'wpconvert_download_result': {
+      if (!api.hasApiKey() && config.getGuestSession()) return guestDownloadDenied(args.jobId);
       try {
         const info = await api.getDownload(args.jobId);
         if (!info.download_url) {
@@ -552,9 +650,10 @@ async function handleCall(name, args) {
           size_bytes: bytes.length,
         });
       } catch (e) {
+        if (e && e.name === 'ApiError' && e.status === 404 && config.getGuestSession()) return guestDownloadDenied(args.jobId);
         if (e && e.name === 'ApiError' && (e.code === 'upgrade_required' || e.details?.preview_only)) {
           return fail(
-            PREVIEW_LOCKED_DOWNLOAD_COPY + '\nCall wpconvert_quota to review upgrade options.',
+            PREVIEW_LOCKED_DOWNLOAD_COPY + '\nCall wpconvert_quota to review upgrade options, or wpconvert_plans to show the user what they can buy.',
             {
               ok: false,
               error: {
@@ -627,6 +726,23 @@ async function handleCall(name, args) {
     }
 
     case 'wpconvert_quota': {
+      if (!api.hasApiKey()) {
+        const summary = connectionSummary();
+        if (summary.mode === 'guest') {
+          const left = summary.remaining_previews != null ? `${summary.remaining_previews} free preview(s) left` : 'free previews';
+          return ok(
+            `Guest session: ${left}${summary.can_convert ? `, converting until ${summary.convert_until}` : '; the convert window has ended'}. ` +
+              'Guest conversions can be previewed, not downloaded, until bought (wpconvert_plans).',
+            {
+              ok: true,
+              ...summary,
+              recommended_next: summary.can_convert && summary.remaining_previews !== 0
+                ? { tool: 'wpconvert_convert_folder', reason: 'Guest previews available.' }
+                : { tool: 'wpconvert_connect', arguments: { kind: 'login' }, reason: 'Sign in to keep converting.' },
+            }
+          );
+        }
+      }
       const q = await api.getQuota();
       const projected = projectQuotaResponse(q);
       const text = formatQuotaText(q);
@@ -668,11 +784,13 @@ export {
   handleCall,
   resolveIdempotencyKey,
   renderApiError,
+  redactSecrets,
   convertSubmissionError,
   successPayload,
   errorPayload,
   ok,
   fail,
+  accountInternals as _internals,
 };
 
 // npx runs node_modules/.bin/wpconvert-mcp, a symlink, so compare real paths.

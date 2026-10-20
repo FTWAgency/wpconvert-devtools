@@ -15,7 +15,7 @@ info:
 
     `info.version` is the version of this API **document**, not of the developer
     tooling. The published CLI (`wpconvert`) and MCP server (`@wpconvert/mcp`)
-    are versioned independently and are currently at `0.3.0`.
+    are versioned independently; npm lists their current versions.
 
 
     ## Typical flow
@@ -110,6 +110,10 @@ tags:
     description: Resolving a short-lived signed URL for a completed theme.
   - name: Playground
     description: Creating in-browser WordPress Playground preview sessions.
+  - name: Billing
+    description: >-
+      What each paid option includes and costs, and starting a Stripe Checkout
+      from a terminal or agent. There is no free-trial option here.
 
 paths:
   /api/convert/quota:
@@ -834,6 +838,157 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /api/billing/catalog:
+    get:
+      operationId: getPlanCatalog
+      summary: List every paid option with what it includes and its price
+      description: >-
+        Public. Starter (one theme, one-time), Pro and Agency (subscriptions),
+        and pay-as-you-go credit packs, with feature lists and prices in cents.
+        Prices are read from the same Stripe prices checkout charges;
+        `price_source` is `published` when Stripe could not be reached and the
+        pricing-page values are shown instead. Cached for up to 10 minutes.
+      tags: [Billing]
+      x-audience: developer
+      security: []
+      responses:
+        '200':
+          description: The catalog.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanCatalog'
+        '404':
+          description: Terminal buying is not enabled on this deployment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegacyFlatError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/billing/cli-options:
+    get:
+      operationId: getCheckoutOptions
+      summary: The catalog personalised for this account and theme
+      description: >-
+        Same options as the catalog, plus what applies to this buyer today:
+        whether the theme can be unlocked, whether the optional $6 Pro add-on is
+        offered with Starter, whether the Starter credit lowers Pro's first
+        month, and whether plan changes go through the billing portal because the
+        account already subscribes. Show every option and let the user choose.
+      tags: [Billing]
+      x-audience: developer
+      parameters:
+        - name: jobId
+          in: query
+          required: false
+          description: The theme to unlock. Omit to compare plans without a theme.
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/GuestTokenHeader'
+        - $ref: '#/components/parameters/ClientHeader'
+      responses:
+        '200':
+          description: Options for this buyer.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckoutOptions'
+        '400':
+          description: '`jobId` is not a conversion id (`invalid_request`).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: >-
+            The conversion does not exist, belongs to someone else, or is a guest
+            conversion and the matching guest token was not sent (`not_found`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /api/billing/cli-checkout:
+    post:
+      operationId: createTerminalCheckout
+      summary: Start a Stripe Checkout for the option the user chose
+      description: >-
+        Returns a Stripe Checkout link to open in a browser, or a billing-portal
+        link when the account already subscribes. Call this only after the user
+        has picked an option. Payment is confirmed by Stripe; poll the
+        conversion status afterwards for `download_available`.
+
+
+        When buying a theme created as a terminal guest, send its guest token.
+        Starter and PAYG move only that theme into the account; Pro and Agency
+        move every theme from the guest session.
+      tags: [Billing]
+      x-audience: developer
+      parameters:
+        - $ref: '#/components/parameters/GuestTokenHeader'
+        - $ref: '#/components/parameters/ClientHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TerminalCheckoutRequest'
+            examples:
+              starter:
+                summary: Unlock one theme
+                value:
+                  kind: starter
+                  jobId: 11111111-1111-4111-8111-111111111111
+              proYearly:
+                summary: Pro, billed yearly
+                value:
+                  kind: pro
+                  interval: year
+      responses:
+        '200':
+          description: A checkout or billing-portal link.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TerminalCheckoutResponse'
+        '400':
+          description: Unknown `kind`, `interval` or `packSize`, or Starter without a `jobId` (`invalid_request`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: The theme was not found for this account and guest token (`not_found`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyError'
+        '409':
+          description: >-
+            The theme cannot be bought: `not_ready`, `already_unlocked`,
+            `preview_only` (free developer previews are never downloadable),
+            `theme_missing`, `already_claimed`, or `already_subscribed` (with a
+            `portal_url`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiKeyError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -936,6 +1091,16 @@ components:
       schema:
         type: string
       example: wpconvert_convert_folder
+    GuestTokenHeader:
+      name: X-WPConvert-Guest-Token
+      in: header
+      required: false
+      description: >-
+        The guest token a terminal received when the user activated guest
+        previews. Needed only to buy a theme that was converted as a guest.
+        Treat it as a secret.
+      schema:
+        type: string
     IdempotencyKeyHeader:
       name: Idempotency-Key
       in: header
@@ -1818,6 +1983,179 @@ components:
             links cannot resolve the API host.
       additionalProperties: true
 
+    PlanOption:
+      type: object
+      title: PlanOption
+      required: [kind, name, billing, summary, features]
+      properties:
+        kind:
+          type: string
+          enum: [starter, pro, agency, payg]
+        name:
+          type: string
+        billing:
+          type: string
+          enum: [one_time, subscription]
+        summary:
+          type: string
+        features:
+          type: array
+          items:
+            type: string
+        price_cents:
+          description: >-
+            Starter: one amount. Pro and Agency: `month` and `year`. Absent for
+            PAYG, which uses `packs`.
+          oneOf:
+            - type: integer
+            - type: object
+              properties:
+                month:
+                  type: integer
+                year:
+                  type: integer
+        pro_delta_cents:
+          type: integer
+          description: Starter only. The optional add-on that gives the theme Pro features.
+        starter_credit_cents:
+          type: integer
+          description: Pro only. Taken off the first month for recent Starter buyers.
+        packs:
+          type: array
+          description: PAYG only.
+          items:
+            type: object
+            properties:
+              size:
+                type: integer
+                enum: [1, 5, 10, 30]
+              price_cents:
+                type: integer
+    PlanCatalog:
+      type: object
+      title: PlanCatalog
+      required: [currency, price_source, trial_available, options]
+      properties:
+        currency:
+          type: string
+          example: usd
+        price_source:
+          type: string
+          enum: [stripe, published]
+        trial_available:
+          type: boolean
+          const: false
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlanOption'
+    CheckoutOption:
+      title: CheckoutOption
+      allOf:
+        - $ref: '#/components/schemas/PlanOption'
+        - type: object
+          properties:
+            available:
+              type: boolean
+              description: Starter and PAYG. False when there is no theme, or it cannot be unlocked.
+            action:
+              type: string
+              enum: [checkout, portal]
+              description: Pro and Agency. `portal` when the account already subscribes.
+            pro_delta_available:
+              type: boolean
+            starter_credit_applies:
+              type: boolean
+            today_cents:
+              description: What the buyer pays today, after any credit.
+              oneOf:
+                - type: integer
+                - type: object
+                  properties:
+                    month:
+                      type: integer
+                    year:
+                      type: integer
+                - type: array
+                  items:
+                    type: object
+                    properties:
+                      size:
+                        type: integer
+                      cents:
+                        type: integer
+    CheckoutOptions:
+      type: object
+      title: CheckoutOptions
+      required: [currency, trial_available, existing_subscriber, options]
+      properties:
+        currency:
+          type: string
+        price_source:
+          type: string
+          enum: [stripe, published]
+        trial_available:
+          type: boolean
+          const: false
+        existing_subscriber:
+          type: boolean
+        job:
+          type: [object, 'null']
+          properties:
+            id:
+              type: string
+              format: uuid
+            unlockable:
+              type: boolean
+            reason:
+              type: [string, 'null']
+              enum: [not_ready, already_unlocked, preview_only, theme_missing, null]
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/CheckoutOption'
+    TerminalCheckoutRequest:
+      type: object
+      title: TerminalCheckoutRequest
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          enum: [starter, pro, agency, payg]
+        jobId:
+          type: string
+          format: uuid
+          description: Required for Starter. Optional for the others; that theme is unlocked by the purchase.
+        interval:
+          type: string
+          enum: [month, year]
+          default: month
+          description: Pro and Agency only.
+        packSize:
+          type: integer
+          enum: [1, 5, 10, 30]
+          description: PAYG only.
+    TerminalCheckoutResponse:
+      type: object
+      title: TerminalCheckoutResponse
+      properties:
+        checkout_url:
+          type: string
+          format: uri
+        session_id:
+          type: string
+        portal_url:
+          type: string
+          format: uri
+          description: Returned instead of `checkout_url` when the account already subscribes.
+        message:
+          type: string
+        claimed:
+          type: array
+          description: Guest themes moved into the account by this call.
+          items:
+            type: string
+            format: uuid
     CapabilityAvailability:
       type: object
       title: CapabilityAvailability

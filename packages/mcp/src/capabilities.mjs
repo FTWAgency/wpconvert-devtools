@@ -89,6 +89,11 @@ export function projectQuotaResponse(quota) {
   };
 }
 
+/** Only the terminal guest status route reports remaining_previews. */
+function isGuestStatus(s) {
+  return s != null && s.remaining_previews !== undefined;
+}
+
 /**
  * Recommend the next MCP tool from a job status snapshot.
  */
@@ -115,12 +120,19 @@ export function recommendedNextForStatus(status) {
     const previewOnly = s.preview_only === true || s.conversion_mode === 'preview_only';
     const downloadable = jobIsDownloadable(s);
 
+    if (isGuestStatus(s) && !downloadable) {
+      return {
+        tool: TOOL_PREVIEW,
+        reason: 'Guest preview. Use wpconvert_create_preview to view it; to download, call wpconvert_plans with this jobId and let the user choose.',
+      };
+    }
+
     if (previewOnly || !downloadable) {
       return {
         tool: TOOL_PREVIEW,
         reason: previewOnly
-          ? 'Preview-only conversion. Use wpconvert_create_preview; download requires upgrade.'
-          : 'Download unavailable. Use wpconvert_create_preview or review quota.',
+          ? 'Preview-only conversion. Use wpconvert_create_preview; download requires upgrade (see wpconvert_plans).'
+          : 'Download unavailable. Use wpconvert_create_preview, or wpconvert_plans to see how to unlock it.',
       };
     }
 
@@ -155,6 +167,12 @@ export function projectStatusResponse(status) {
   if (s.conversion_mode != null) out.conversion_mode = s.conversion_mode;
   if (s.download_available != null) out.download_available = s.download_available;
   if (s.preview_available != null) out.preview_available = s.preview_available;
+  if (isGuestStatus(s)) {
+    out.guest = true;
+    out.remaining_previews = s.remaining_previews;
+    if (s.convert_until != null) out.convert_until = s.convert_until;
+    if (s.claim_until != null) out.claim_until = s.claim_until;
+  }
 
   return out;
 }

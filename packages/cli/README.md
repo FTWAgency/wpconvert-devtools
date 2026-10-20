@@ -10,17 +10,40 @@ Convert a website or codebase **folder** into a WordPress theme without leaving 
 npm install -g wpconvert
 ```
 
-## Authenticate
-
-Create an API key in your WPConvert dashboard (**Settings → API & CLI**), then:
+## Try it without an account
 
 ```bash
-wpconvert login            # paste the key (input hidden); stored at ~/.wpconvert/config.json (0600)
+wpconvert convert .
+```
+
+With no API key, `convert` offers a **free guest preview**: it shows a link and a code, you complete a quick check in your browser, and you get a few WordPress Playground previews for 24 hours. No account or card needed. Guest previews can't be downloaded; when you like one, buy it from the terminal (see [Buy from the terminal](#buy-from-the-terminal)). Guest conversions are kept for 7 days. In scripts, pass `--guest` to skip the question; CI never starts a guest session.
+
+## Authenticate
+
+```bash
+wpconvert login            # sign in with your browser, type the code shown; the key is saved to ~/.wpconvert/config.json (0600)
+wpconvert login --paste    # or paste a key from Settings → API & CLI (input hidden)
 # or, for CI:
 export WPCONVERT_API_KEY=wpc_live_xxx
 ```
 
+Browser sign-in shows a link and a code. Sign in (or create an account), type the code from your terminal, and approve. Only enter a code that your own terminal shows. The new key is named "Terminal (date)" in your dashboard and can be revoked there. `WPCONVERT_API_KEY`, when set, takes priority over the saved key.
+
 API keys require a **Pro/Agency** plan or available **PAYG credits** for full downloadable conversions. Free verified accounts may also create preview-only keys (up to **3 lifetime** Playground previews — no theme ZIP download) when the server has developer previews enabled.
+
+## Buy from the terminal
+
+```bash
+wpconvert plans                       # every option, what it includes, today's price
+wpconvert unlock <jobId>              # numbered menu for this theme, then Stripe Checkout
+wpconvert unlock <jobId> --starter    # or pick directly: --pro, --agency, --payg 5, add --yearly
+wpconvert upgrade                     # a plan or credits without a specific theme
+```
+
+- **Starter** ($19 one-time) downloads this one theme. **Pro** and **Agency** are monthly or yearly plans that also unlock this theme. **PAYG** credits don't expire; one unlocks this theme. There is no free trial in the terminal. Prices come live from Stripe.
+- Every purchase asks `Open Stripe to pay $19.00? [y/N]` first (`--yes` skips it in scripts). You pay in your browser; the terminal waits up to 15 minutes, then downloads the theme.
+- Buying needs an account, so `unlock` signs you in through the browser first if needed. Guest themes move to your account when you buy: Starter and PAYG move the theme you're buying, Pro and Agency move all of them.
+- Already subscribed? Plan changes open the Stripe billing portal instead.
 
 ## Convert a folder
 
@@ -76,6 +99,9 @@ wpconvert download <jobId>    # download a completed conversion (paid / full job
 wpconvert preview <jobId>     # preview the theme in WordPress Playground
 wpconvert quota               # show plan, usage, and next-conversion capabilities
 wpconvert quota --json        # print the complete backend quota JSON (for scripts/agents)
+wpconvert plans               # paid options and today's prices
+wpconvert unlock <jobId>      # buy this theme or a plan that unlocks it
+wpconvert upgrade             # start a plan or buy credits
 ```
 
 ### Quota and conversion preflight
@@ -111,6 +137,7 @@ Submit-time rate limits, in-flight caps, and worker errors are **not** modeled b
 | --- | --- |
 | `0` | Success |
 | `1` | Generic failure (auth, validation, network, submit-time errors) |
+| `2` | `unlock` / `upgrade` needs a choice (`--starter`, `--pro`, `--agency`, `--payg <n>`) and there is no terminal to ask in |
 | `3` | Authenticated capability response explicitly blocks conversion (`can_start: false`) |
 
 ## Notes & safety
@@ -124,7 +151,7 @@ When enabled on the server, free verified accounts can create API keys that run 
 
 - **3 lifetime** preview-only conversions per account (separate from the dashboard free preview).
 - **1 concurrent** job; stricter submit rate limits than paid keys.
-- **Full exports require PRO, Agency, or PAYG credits** — a one-time Starter unlock does not grant programmatic download access.
+- **Full exports require PRO, Agency, or PAYG credits** — a one-time Starter unlock buys one theme; it does not make new API conversions downloadable.
 - Preview-only jobs are **never retroactively downloadable**; after upgrading, **re-run** the conversion to get a ZIP.
 
 On success, `wpconvert convert` **automatically creates a Playground preview URL**. Preview-only jobs **auto-open your browser** by default; paid users get the link only (pass `--open` to launch). Use `--no-open` in CI/headless, or `--no-preview` to skip Playground entirely.

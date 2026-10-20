@@ -8,15 +8,16 @@
 
 > WPConvert does **not** modify your source project and does **not** require WordPress credentials. Output is either `theme.zip` (paid) or a WordPress Playground preview URL (~10 minutes).
 
-> The CLI and MCP server are open source. The WPConvert conversion engine runs on [WPConvert.ai](https://wpconvert.ai) and requires an API key. Free verified accounts can create preview-only developer conversions; downloading `theme.zip` requires PRO, Agency, or PAYG credits.
+> The CLI and MCP server are open source. The WPConvert conversion engine runs on [WPConvert.ai](https://wpconvert.ai). No API key is needed to try it: a quick browser check gives a few free guest previews, and browser sign-in creates a key for you. Downloading `theme.zip` requires Starter (one theme), PRO, Agency, or PAYG credits, which you can buy from the terminal or the agent.
 
 ## Agent quickstart (MCP)
 
 If you are a coding agent in Cursor, Claude Code, Claude Desktop, or another MCP host, **use the MCP tools** (do not shell out to the CLI in the same session).
 
 1. Configure `@wpconvert/mcp` — see [examples/mcp/](examples/mcp/) and [docs/agents.md](docs/agents.md)
-2. `wpconvert_quota` — inspect capabilities before converting
+2. `wpconvert_quota` — inspect capabilities before converting (no key yet? `wpconvert_connect`)
 3. `wpconvert_convert_folder` → `wpconvert_check_status` → `wpconvert_download_result` or `wpconvert_create_preview`
+4. To download a preview or get a plan: `wpconvert_plans` → the user picks → `wpconvert_checkout`
 
 | MCP tool | Purpose |
 | --- | --- |
@@ -26,36 +27,39 @@ If you are a coding agent in Cursor, Claude Code, Claude Desktop, or another MCP
 | `wpconvert_download_result` | Download `theme.zip` when allowed |
 | `wpconvert_create_preview` | Playground URL when preview-only |
 | `wpconvert_explain_failure` | Failure reason + recovery |
+| `wpconvert_connect` | Link + code for free guest previews (`guest`) or browser sign-in (`login`); the user opens it |
+| `wpconvert_connect_status` | Whether the user finished the link; how WPConvert is connected |
+| `wpconvert_plans` | Every option (Starter, Pro, Agency, PAYG) with what it includes and today's price |
+| `wpconvert_checkout` | Stripe link for the option the user picked; the user pays |
 
 Portable Skill: [skills/wpconvert/SKILL.md](skills/wpconvert/SKILL.md)
 
 ## MCP setup (Cursor / Claude Code / Claude Desktop)
 
-Current release: **@wpconvert/mcp@0.3.2** (`npx -y @wpconvert/mcp` uses npm `latest`; pin `@0.3.2` for deterministic installs).
+Current release: **@wpconvert/mcp@0.4.0** (`npx -y @wpconvert/mcp` uses npm `latest`; pin `@0.4.0` for deterministic installs).
+
+**Claude Code** — one command, no config file, no key:
+
+```bash
+claude mcp add wpconvert --scope user -- npx -y @wpconvert/mcp@0.4.0
+```
+
+`--scope user` makes it available in every project. Confirm with `claude mcp list` (`wpconvert … ✔ Connected`) or `/mcp` in a session. Then ask the agent to convert a folder; it gives you a link for free guest previews or to sign in.
+
+**Cursor / Claude Desktop:**
 
 ```json
 {
   "mcpServers": {
     "wpconvert": {
       "command": "npx",
-      "args": ["-y", "@wpconvert/mcp@0.3.2"],
-      "env": {
-        "WPCONVERT_API_KEY": "wpc_live_EXAMPLE_ONLY_NOT_A_REAL_KEY"
-      }
+      "args": ["-y", "@wpconvert/mcp@0.4.0"]
     }
   }
 }
 ```
 
-**Claude Code** — one command, no config file:
-
-```bash
-claude mcp add wpconvert --scope user -e WPCONVERT_API_KEY=wpc_live_EXAMPLE_ONLY_NOT_A_REAL_KEY -- npx -y @wpconvert/mcp@0.3.2
-```
-
-`--scope user` makes it available in every project. Confirm with `claude mcp list` (`wpconvert … ✔ Connected`) or `/mcp` in a session.
-
-Optional: set `WPCONVERT_API_BASE` to point at a non-default API host (testing only).
+Optional `env`: `WPCONVERT_API_KEY` to use an existing key (for Claude Code, add `-e WPCONVERT_API_KEY=wpc_live_EXAMPLE_ONLY_NOT_A_REAL_KEY` after `--scope user`), and `WPCONVERT_API_BASE` for a non-default API host (testing only).
 
 See [docs/mcp.md](docs/mcp.md) and [docs/agents.md](docs/agents.md) for the full agent workflow.
 
@@ -78,7 +82,8 @@ This repository does **not** include the WPConvert conversion engine, backend wo
 ## Requirements
 
 - **Node.js >= 18**
-- A **WPConvert API key** (`wpc_live_...`) from your dashboard (**Settings → API & CLI**)
+- Optional: a **WPConvert API key** (`wpc_live_...`) from your dashboard (**Settings → API & CLI**), or let `wpconvert login` / `wpconvert_connect` create one through browser sign-in
+- **Guest previews** without an account: a few WordPress Playground previews for 24 hours after one browser check; buy one with **Starter** to download it
 - **PRO/Agency** or **PAYG credits** for full conversions with `theme.zip` download
 - **Free verified accounts** can run up to **3 lifetime** preview-only developer conversions (Playground preview, no ZIP)
 - CLI, API, and MCP use the **same credits** as dashboard conversions for paid exports (1 credit per successful conversion; failed conversions are refunded)
@@ -121,14 +126,17 @@ Paid conversions (PRO/Agency/PAYG) download `theme.zip` automatically and print 
 
 ## Quickstart (CLI)
 
-Current release: **wpconvert@0.3.1**
+Current release: **wpconvert@0.4.0**
 
 ```bash
 npm install -g wpconvert
 # or: npx wpconvert
-wpconvert login
+wpconvert convert .         # no key: offers free guest previews after a browser check
+wpconvert login             # or sign in through your browser (saves a key)
 wpconvert quota
 wpconvert convert . --type theme
+wpconvert plans             # what each option includes and costs
+wpconvert unlock <jobId>    # buy this theme or a plan, then download it
 ```
 
 The CLI smart-zips your folder, runs a capability preflight before upload, polls until done, then downloads `theme.zip` (paid) or opens a Playground preview (free preview-only).

@@ -44,10 +44,11 @@ function globMarkdownFiles() {
 
 // --- MCP tools from source of truth ---
 const serverSrc = read('packages/mcp/src/server.mjs');
-const mcpTools = [...serverSrc.matchAll(/name:\s*'(wpconvert_[a-z_]+)'/g)].map((m) => m[1]);
+const toolSources = serverSrc + read('packages/mcp/src/account.mjs');
+const mcpTools = [...toolSources.matchAll(/name:\s*'(wpconvert_[a-z_]+)'/g)].map((m) => m[1]);
 const expectedTools = new Set(mcpTools);
-if (expectedTools.size !== 6) {
-  fail(`expected 6 MCP tools in server.mjs, found ${expectedTools.size}`);
+if (expectedTools.size !== 10) {
+  fail(`expected 10 MCP tools in server.mjs + account.mjs, found ${expectedTools.size}`);
 }
 
 // --- CLI commands ---
@@ -262,7 +263,7 @@ if (existsSync(path.join(ROOT, serverJsonRel))) {
     if (!apiKeyVar) {
       fail('server.json must declare WPCONVERT_API_KEY environment variable');
     } else {
-      if (!apiKeyVar.isRequired) fail('WPCONVERT_API_KEY must be required');
+      if (apiKeyVar.isRequired !== false) fail('WPCONVERT_API_KEY must be optional (guest previews and sign-in work without it)');
       if (!apiKeyVar.isSecret) fail('WPCONVERT_API_KEY must be marked secret');
       if (apiKeyVar.format !== 'string') fail('WPCONVERT_API_KEY format must be string');
     }
