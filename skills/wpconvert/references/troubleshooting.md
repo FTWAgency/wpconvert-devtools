@@ -6,7 +6,10 @@
 | --- | --- | --- |
 | `can_start: false` | Entitlement exhausted or account blocked | Follow `recommended_action`; do not retry submit |
 | Preflight denial from `wpconvert_convert_folder` | Same as quota block | Call `wpconvert_quota`; no upload occurred |
-| Auth error | Missing/invalid `WPCONVERT_API_KEY` | Configure MCP env; never log the key |
+| Auth error | No key or guest session, or an invalid `WPCONVERT_API_KEY` | Call `wpconvert_connect` (guest or login), or fix the MCP env; never log the key |
+| Guest previews used or expired | `guest_previews_used` / `guest_token_expired` | `wpconvert_connect { "kind": "login" }` to keep converting; earlier guest previews can still be bought with `wpconvert_plans` for 7 days |
+| Link expired | User didn't finish the connect link in 10 minutes | Call `wpconvert_connect` again |
+| Env key overrides sign-in | `env_key_override: true` from `wpconvert_connect_status` | Remove `WPCONVERT_API_KEY` from the MCP config and restart the server |
 
 ## Idempotency
 

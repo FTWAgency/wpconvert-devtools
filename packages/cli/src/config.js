@@ -35,17 +35,64 @@ function readFileConfig() {
   }
 }
 
-/** Persist config (api key, optional apiBase) with 0600 perms. */
+/**
+ * Persist config (api key, optional apiBase, guest session) with 0600 perms.
+ * Written to a temp file and renamed, so a crash never leaves a half-written
+ * file and the secret is never readable at looser permissions.
+ */
 function writeFileConfig(next) {
   const dir = configDir();
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   }
   const merged = { ...readFileConfig(), ...next };
-  fs.writeFileSync(configPath(), JSON.stringify(merged, null, 2), { mode: 0o600 });
-  // Re-assert perms in case the file pre-existed with looser bits.
+  for (const k of Object.keys(merged)) if (merged[k] === undefined) delete merged[k];
+  const tmp = path.join(dir, `.config.json.${process.pid}.${Date.now()}.tmp`);
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(merged, null, 2), { mode: 0o600 });
+    fs.renameSync(tmp, configPath());
+  } finally {
+    try { fs.unlinkSync(tmp); } catch (_) { /* renamed */ }
+  }
+  // Re-assert perms in case the platform ignored the mode on create.
   try { fs.chmodSync(configPath(), 0o600); } catch (_) { /* best-effort */ }
   return configPath();
+}
+
+const GUEST_TOKEN_RX = /^wpcg_[A-Za-z0-9_-]{40,64}$/;
+
+/** The stored terminal guest session, or null when absent, malformed or past its claim window. */
+function getGuestSession(now = Date.now()) {
+  const guest = readFileConfig().guest;
+  if (!guest || typeof guest !== 'object' || !GUEST_TOKEN_RX.test(String(guest.token || ''))) return null;
+  if (guest.claimUntil && Date.parse(guest.claimUntil) <= now) return null;
+  return {
+    token: guest.token,
+    convertUntil: guest.convertUntil || null,
+    claimUntil: guest.claimUntil || null,
+    remaining: Number.isInteger(guest.remaining) ? guest.remaining : null,
+  };
+}
+
+function saveGuestSession({ token, convertUntil, claimUntil, remaining }) {
+  return writeFileConfig({ guest: { token, convertUntil, claimUntil, remaining } });
+}
+
+/** Last preview count the server reported; display only, the server enforces it. */
+function updateGuestRemaining(remaining) {
+  const guest = readFileConfig().guest;
+  if (!guest || typeof guest !== 'object' || !Number.isInteger(remaining)) return;
+  writeFileConfig({ guest: { ...guest, remaining } });
+}
+
+function clearGuestSession() {
+  if (readFileConfig().guest === undefined) return;
+  writeFileConfig({ guest: undefined });
+}
+
+/** Guest conversions are only accepted inside the 24-hour convert window. */
+function guestCanConvert(session, now = Date.now()) {
+  return Boolean(session && session.convertUntil && Date.parse(session.convertUntil) > now);
 }
 
 /**
@@ -77,4 +124,9 @@ module.exports = {
   writeFileConfig,
   getApiBase,
   getApiKey,
+  getGuestSession,
+  saveGuestSession,
+  updateGuestRemaining,
+  clearGuestSession,
+  guestCanConvert,
 };

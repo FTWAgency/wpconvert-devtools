@@ -35,11 +35,27 @@ All three call `https://api.wpconvert.ai` with `X-API-Key`. Credits and quotas a
 
 ## Authentication
 
+A key is optional. Without one, `wpconvert_convert_folder` returns `recommended_next: wpconvert_connect`:
+
+1. `wpconvert_connect { "kind": "guest" }` for a few free previews (no account), or `{ "kind": "login" }` to sign in (needed to buy). Show the user the link and code; never open the link yourself.
+2. `wpconvert_connect_status` until it reports `connected` (it waits ~20s per call). The guest token or new key is saved to `~/.wpconvert/config.json` (0600) and never appears in tool output.
+
+To use an existing key instead:
+
 1. Create an API key in the WPConvert dashboard (**Settings → API & CLI**).
-2. Set `WPCONVERT_API_KEY` in the MCP server environment or shell — never commit it, never log it, never put it in URLs.
+2. Set `WPCONVERT_API_KEY` in the MCP server environment or shell — never commit it, never log it, never put it in URLs. It takes priority over a saved key.
 3. Example placeholder only: `wpc_live_EXAMPLE_ONLY_NOT_A_REAL_KEY`
 
 Optional: `WPCONVERT_API_BASE` for non-production testing.
+
+## Buying
+
+When a theme is preview-only or a guest preview, or the user wants a plan:
+
+1. `wpconvert_plans` (with `jobId` to unlock a theme) — show the user **every** option with what it includes and today's price.
+2. Let the user choose. Do not recommend one unless asked, and do not pick for them.
+3. `wpconvert_checkout` with that choice's `checkout_arguments`. Needs a signed-in account. Give the user the Stripe link; never open it or pay.
+4. After the user says they paid, `wpconvert_check_status` (theme) or `wpconvert_quota` (plan/credits). Starter unlocks one theme; Pro and Agency are monthly or yearly; PAYG credits don't expire. There is no free trial through the MCP.
 
 ## Folder and build selection
 

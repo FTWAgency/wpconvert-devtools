@@ -21,8 +21,8 @@ import YAML from 'yaml';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SPEC_PATH = path.join(HERE, '..', 'openapi.yaml');
 
-// SHA-256 of wpconvert/wpconvert-api/openapi.yaml at merge commit a95dc36 (PR #19).
-const CANONICAL_SHA256 = '99ebe95b6bce40b13f8a3370b03234f8c8e06d234d7104381d1fa8a540f7595e';
+// SHA-256 of wpconvert/wpconvert-api/openapi.yaml at commit cbbccafa (terminal guest previews and buying).
+const CANONICAL_SHA256 = '38c4b2bd9d53c5d35aee404130b5a1e977be627c73bf98c4063a7c15752324bd';
 
 const EXPECTED_OPERATION_IDS = [
   'getQuota',
@@ -32,6 +32,9 @@ const EXPECTED_OPERATION_IDS = [
   'getConversionStatus',
   'getDownload',
   'createPlaygroundSession',
+  'getPlanCatalog',
+  'getCheckoutOptions',
+  'createTerminalCheckout',
 ];
 
 const EXPECTED_PATHS = [
@@ -42,6 +45,9 @@ const EXPECTED_PATHS = [
   '/api/convert/{jobId}/status',
   '/api/download/{projectId}',
   '/api/playground/sessions',
+  '/api/billing/catalog',
+  '/api/billing/cli-options',
+  '/api/billing/cli-checkout',
 ];
 
 function fail(message) {

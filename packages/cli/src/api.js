@@ -16,7 +16,7 @@
  * Requires Node >= 18 (global fetch / FormData / Blob).
  */
 
-const { getApiBase, getApiKey } = require('./config');
+const { getApiBase, getApiKey, getGuestSession, clearGuestSession, updateGuestRemaining } = require('./config');
 const { assertIdempotencyKey, isAmbiguousTransportError, sleep } = require('./idempotency');
 
 const CLI_VERSION = require('../package.json').version;
@@ -151,9 +151,10 @@ async function submitConversionRequest(performRequest, { idempotencyKey } = {}) 
   let hadTransportRetry = false;
 
   for (let attempt = 0; attempt < 2; attempt++) {
+    const headers = submissionHeaders(key);
     let res;
     try {
-      res = await performRequest(submissionHeaders(key));
+      res = await performRequest(headers);
     } catch (e) {
       if (attempt === 0 && isAmbiguousTransportError(e)) {
         hadTransportRetry = true;
@@ -280,20 +281,174 @@ async function createJobFromStorage(jobId, { projectName, exportType, elementor,
   );
 }
 
-/** GET /api/convert/:jobId/status */
-async function getStatus(jobId) {
-  let res;
+function networkError(e) {
+  return new ApiError(e.message || 'Network request failed', {
+    code: 'network_error',
+    status: 0,
+    details: { cause: e.cause?.code || null },
+  });
+}
+
+/** fetch, with transport failures reported as network_error. */
+async function send(target, init) {
   try {
-    res = await fetch(url(`/api/convert/${encodeURIComponent(jobId)}/status`), {
-      headers: authHeaders(),
-    });
+    return await fetch(target, init);
   } catch (e) {
-    throw new ApiError(e.message || 'Network request failed', {
-      code: 'network_error',
-      status: 0,
-      details: { cause: e.cause?.code || null },
-    });
+    throw networkError(e);
   }
+}
+
+// ---- Terminal guest session (X-WPConvert-Guest-Token) ----------------------
+
+const GUEST_HEADER = 'X-WPConvert-Guest-Token';
+
+function hasApiKey() {
+  return Boolean(getApiKey());
+}
+
+function guestHeaders(extra = {}) {
+  const session = getGuestSession();
+  if (!session) {
+    throw new ApiError(
+      'No API key or guest session found. Run `wpconvert login`, or `wpconvert convert <folder>` to start a free guest preview.',
+      { code: 'missing_credentials' }
+    );
+  }
+  const headers = { [GUEST_HEADER]: session.token, 'X-WPConvert-Client': clientHeaderValue(), ...extra };
+  if (requestExtras.tool) headers['X-WPConvert-Tool'] = String(requestExtras.tool);
+  return headers;
+}
+
+/** Parse a guest-route response; a token the server no longer accepts is dropped. */
+async function parseGuestResponse(res) {
+  try {
+    return await parseResponse(res);
+  } catch (e) {
+    if (e instanceof ApiError && e.code === 'guest_token_invalid') clearGuestSession();
+    throw e;
+  }
+}
+
+/**
+ * POST /api/convert/cli-guest (multipart). Spends one guest preview, so it is
+ * never retried: a retry after an ambiguous failure could spend two.
+ */
+async function convertGuest(zipBuffer, { projectName } = {}) {
+  const headers = guestHeaders();
+  const res = await send(url('/api/convert/cli-guest'), {
+    method: 'POST',
+    headers,
+    body: buildMultipartFormData(zipBuffer, { projectName, exportType: 'theme' }),
+  });
+  const body = await parseGuestResponse(res);
+  if (body && Number.isInteger(body.remaining_previews)) updateGuestRemaining(body.remaining_previews);
+  return body;
+}
+
+async function getGuestStatus(jobId) {
+  const headers = guestHeaders();
+  const res = await send(url(`/api/convert/cli-guest/${encodeURIComponent(jobId)}/status`), { headers });
+  return parseGuestResponse(res);
+}
+
+async function createGuestPlaygroundSession(jobId) {
+  const headers = guestHeaders({ 'content-type': 'application/json' });
+  const res = await send(url('/api/playground/cli-guest'), {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ conversionId: jobId }),
+  });
+  return parseGuestResponse(res);
+}
+
+/**
+ * Run the key-authenticated call; fall back to the guest route when there is
+ * no key, or when the key cannot see a guest job that has not been bought yet.
+ */
+async function withGuestFallback(keyed, guest) {
+  if (!hasApiKey() && getGuestSession()) return guest();
+  try {
+    return await keyed();
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404 && getGuestSession()) return guest();
+    throw e;
+  }
+}
+
+/** GET /api/convert/:jobId/status (or the guest status route) */
+async function getStatus(jobId) {
+  return withGuestFallback(async () => {
+    const headers = authHeaders();
+    const res = await send(url(`/api/convert/${encodeURIComponent(jobId)}/status`), { headers });
+    return parseResponse(res);
+  }, () => getGuestStatus(jobId));
+}
+
+// ---- Device links (POST /api/cli/device*) ----------------------------------
+
+const POLL_STATES = new Set(['authorization_pending', 'slow_down', 'expired_token', 'invalid_grant']);
+
+/** Start a guest activation or a browser sign-in. Sends no credentials. */
+async function createDeviceLink(kind) {
+  const client = clientHeaderValue();
+  const res = await send(url('/api/cli/device'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'X-WPConvert-Client': client },
+    body: JSON.stringify({ kind, client }),
+  });
+  return parseResponse(res);
+}
+
+/**
+ * One poll. Returns { status: 'ok', body } with the secret, or the RFC 8628
+ * state. Anything else (account limits, server errors) throws ApiError.
+ */
+async function pollDeviceToken(deviceCode) {
+  const res = await send(url('/api/cli/device/token'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'X-WPConvert-Client': clientHeaderValue() },
+    body: JSON.stringify({ device_code: deviceCode }),
+  });
+  const text = await res.text();
+  let body = {};
+  if (text) {
+    try { body = JSON.parse(text); } catch (_) { body = { raw: text }; }
+  }
+  if (res.ok) return { status: 'ok', body };
+  if (res.status === 400 && POLL_STATES.has(body.error)) return { status: body.error, interval: body.interval };
+  throw apiErrorFromResponse(res.status, body);
+}
+
+// ---- Terminal billing (GET /catalog, /cli-options; POST /cli-checkout) ------
+
+/** Key headers, plus the guest token so the server can move guest themes being bought. */
+function billingHeaders(extra = {}) {
+  const headers = authHeaders(extra);
+  const session = getGuestSession();
+  if (session) headers[GUEST_HEADER] = session.token;
+  return headers;
+}
+
+async function getCatalog() {
+  const res = await send(url('/api/billing/catalog'), { headers: { 'X-WPConvert-Client': clientHeaderValue() } });
+  return parseResponse(res);
+}
+
+async function getCheckoutOptions(jobId) {
+  const headers = billingHeaders();
+  const query = jobId ? `?jobId=${encodeURIComponent(jobId)}` : '';
+  const res = await send(url(`/api/billing/cli-options${query}`), { headers });
+  return parseResponse(res);
+}
+
+/** POST /api/billing/cli-checkout {kind, jobId?, interval?, packSize?} -> {checkout_url} | {portal_url} */
+async function createCheckout(request) {
+  const headers = billingHeaders({ 'content-type': 'application/json' });
+  const res = await send(url('/api/billing/cli-checkout'), {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(request),
+  });
   return parseResponse(res);
 }
 
@@ -310,12 +465,15 @@ async function getDownload(projectId) {
  * Creates an on-demand WordPress Playground preview session for a completed job.
  */
 async function createPlaygroundSession(projectId) {
-  const res = await fetch(url('/api/playground/sessions'), {
-    method: 'POST',
-    headers: authHeaders({ 'content-type': 'application/json' }),
-    body: JSON.stringify({ projectId }),
-  });
-  return parseResponse(res);
+  return withGuestFallback(async () => {
+    const headers = authHeaders({ 'content-type': 'application/json' });
+    const res = await fetch(url('/api/playground/sessions'), {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ projectId }),
+    });
+    return parseResponse(res);
+  }, () => createGuestPlaygroundSession(projectId));
 }
 
 /** Fetch raw bytes from a (signed) download URL. */
@@ -344,6 +502,15 @@ module.exports = {
   getDownload,
   createPlaygroundSession,
   fetchBinary,
+  hasApiKey,
+  convertGuest,
+  getGuestStatus,
+  createGuestPlaygroundSession,
+  createDeviceLink,
+  pollDeviceToken,
+  getCatalog,
+  getCheckoutOptions,
+  createCheckout,
   // exported for tests
   _internals: {
     parseSubmissionResponse,

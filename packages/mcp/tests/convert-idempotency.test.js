@@ -68,6 +68,7 @@ function baseApiMock(overrides = {}) {
 
   const apiMock = {
     ApiError,
+    hasApiKey() { return true; },
     setRequestExtras(extras) {
       calls.setRequestExtras.push(extras);
     },
