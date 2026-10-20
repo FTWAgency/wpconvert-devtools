@@ -25,7 +25,7 @@ WPConvert **does not**:
 
 | Surface | Best for | Capability contract |
 | --- | --- | --- |
-| **MCP** (`@wpconvert/mcp`) | Cursor, Claude Desktop, other MCP hosts | Six tools with `recommended_next` JSON; prefer when the MCP server is already configured |
+| **MCP** (`@wpconvert/mcp`) | Cursor, Claude Code, Claude Desktop, other MCP hosts | Six tools with `recommended_next` JSON; prefer when the MCP server is already configured |
 | **CLI** (`wpconvert`) | Shell, CI scripts, humans in a terminal | `wpconvert quota` preflight; exit code `3` when blocked |
 | **REST** | Custom backends, language-agnostic integrations | Full OpenAPI contract; you implement polling and idempotency headers |
 

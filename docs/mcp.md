@@ -30,6 +30,16 @@ Requires `WPCONVERT_API_KEY` in the environment.
 }
 ```
 
+## Configure (Claude Code)
+
+```bash
+claude mcp add wpconvert --scope user -e WPCONVERT_API_KEY=wpc_live_xxx -- npx -y @wpconvert/mcp
+```
+
+- `--scope user` makes the server available in every project. Without it, Claude Code's default `local` scope applies only to the folder you ran the command in.
+- Put the server name before `-e`. `-e` accepts several values, so `claude mcp add -e KEY=value wpconvert …` reads `wpconvert` as another variable and fails.
+- Confirm with `claude mcp list` (`wpconvert … ✔ Connected`) or `/mcp` inside a session. Remove with `claude mcp remove wpconvert -s user`.
+
 Optional: `WPCONVERT_API_BASE` for non-default API host (testing).
 
 ## Recommended agent workflow

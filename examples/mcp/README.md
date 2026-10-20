@@ -6,6 +6,7 @@ Example MCP server entries for WPConvert. Copy the relevant block into your host
 | --- | --- |
 | [cursor.json](cursor.json) | Cursor (`.cursor/mcp.json` or MCP settings) |
 | [claude-desktop.json](claude-desktop.json) | Claude Desktop |
+| No file needed | Claude Code: `claude mcp add wpconvert --scope user -e WPCONVERT_API_KEY=wpc_live_EXAMPLE_ONLY_NOT_A_REAL_KEY -- npx -y @wpconvert/mcp` ([docs/mcp.md](../../docs/mcp.md#configure-claude-code)) |
 
 ## API key
 
