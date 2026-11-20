@@ -1,0 +1,1267 @@
+{
+  "tools": [
+    {
+      "name": "check_status: queued with progress",
+      "account": "key",
+      "tool": "wpconvert_check_status",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "status=queued progress=5%\nNext: wpconvert_check_status — Job still running. Poll wpconvert_check_status until done.\n\n{\n  \"job_id\": \"44444444-4444-4444-8444-444444444444\",\n  \"project_id\": \"44444444-4444-4444-8444-444444444444\",\n  \"status\": \"queued\",\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_check_status\",\n    \"reason\": \"Job still running. Poll wpconvert_check_status until done.\",\n    \"retry_after_seconds\": 15\n  },\n  \"progress\": 5\n}"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "route": "GET /api/convert/44444444-4444-4444-8444-444444444444/status",
+          "credential": "api_key",
+          "tool": "wpconvert_check_status",
+          "client": "mcp/<version>"
+        }
+      ]
+    },
+    {
+      "name": "check_status: done, downloadable, preview available",
+      "account": "key",
+      "tool": "wpconvert_check_status",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "status=done progress=100%\npreview: available (call wpconvert_create_preview)\nNext: wpconvert_download_result — Conversion complete. Download theme.zip with wpconvert_download_result.\n\n{\n  \"job_id\": \"44444444-4444-4444-8444-444444444444\",\n  \"project_id\": \"44444444-4444-4444-8444-444444444444\",\n  \"status\": \"done\",\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_download_result\",\n    \"reason\": \"Conversion complete. Download theme.zip with wpconvert_download_result.\"\n  },\n  \"progress\": 100,\n  \"preview_only\": false,\n  \"conversion_mode\": \"full\",\n  \"download_available\": true,\n  \"preview_available\": true\n}"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "route": "GET /api/convert/44444444-4444-4444-8444-444444444444/status",
+          "credential": "api_key",
+          "tool": "wpconvert_check_status",
+          "client": "mcp/<version>"
+        }
+      ]
+    },
+    {
+      "name": "check_status: done, preview only",
+      "account": "key",
+      "tool": "wpconvert_check_status",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "status=done progress=100%\npreview: available (call wpconvert_create_preview)\nDownload locked. Upgrade to PRO or add PAYG credits, then re-run this conversion to download theme.zip.\nNext: wpconvert_create_preview — Preview-only conversion. Use wpconvert_create_preview; download requires upgrade (see wpconvert_plans).\n\n{\n  \"job_id\": \"44444444-4444-4444-8444-444444444444\",\n  \"project_id\": \"44444444-4444-4444-8444-444444444444\",\n  \"status\": \"done\",\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_create_preview\",\n    \"reason\": \"Preview-only conversion. Use wpconvert_create_preview; download requires upgrade (see wpconvert_plans).\"\n  },\n  \"progress\": 100,\n  \"preview_only\": true,\n  \"conversion_mode\": \"preview_only\",\n  \"download_available\": false,\n  \"preview_available\": true\n}"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "route": "GET /api/convert/44444444-4444-4444-8444-444444444444/status",
+          "credential": "api_key",
+          "tool": "wpconvert_check_status",
+          "client": "mcp/<version>"
+        }
+      ]
+    },
+    {
+      "name": "check_status: failed",
+      "account": "key",
+      "tool": "wpconvert_check_status",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "status=failed\nerror: Build step crashed.\nNext: wpconvert_explain_failure — Job failed. Use wpconvert_explain_failure for details and recovery guidance.\n\n{\n  \"job_id\": \"44444444-4444-4444-8444-444444444444\",\n  \"project_id\": \"44444444-4444-4444-8444-444444444444\",\n  \"status\": \"failed\",\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_explain_failure\",\n    \"reason\": \"Job failed. Use wpconvert_explain_failure for details and recovery guidance.\"\n  },\n  \"error\": \"Build step crashed.\"\n}"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "route": "GET /api/convert/44444444-4444-4444-8444-444444444444/status",
+          "credential": "api_key",
+          "tool": "wpconvert_check_status",
+          "client": "mcp/<version>"
+        }
+      ]
+    },
+    {
+      "name": "check_status: guest preview done",
+      "account": "guest",
+      "tool": "wpconvert_check_status",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "status=done progress=100%\nguest previews left: 1\npreview: available (call wpconvert_create_preview)\nGuest previews cannot be downloaded. To download this theme, call wpconvert_plans with this jobId and let the user choose how to unlock it (Starter unlocks just this theme).\nNext: wpconvert_create_preview — Guest preview. Use wpconvert_create_preview to view it; to download, call wpconvert_plans with this jobId and let the user choose.\n\n{\n  \"job_id\": \"44444444-4444-4444-8444-444444444444\",\n  \"project_id\": \"44444444-4444-4444-8444-444444444444\",\n  \"status\": \"done\",\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_create_preview\",\n    \"reason\": \"Guest preview. Use wpconvert_create_preview to view it; to download, call wpconvert_plans with this jobId and let the user choose.\"\n  },\n  \"progress\": 100,\n  \"download_available\": false,\n  \"preview_available\": true,\n  \"guest\": true,\n  \"remaining_previews\": 1,\n  \"convert_until\": \"2099-01-01T00:00:00Z\",\n  \"claim_until\": \"2099-01-08T00:00:00Z\"\n}"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "route": "GET /api/convert/cli-guest/44444444-4444-4444-8444-444444444444/status",
+          "credential": "guest_token",
+          "tool": "wpconvert_check_status",
+          "client": "mcp/<version>"
+        }
+      ]
+    },
+    {
+      "name": "check_status: rate limited",
+      "account": "key",
+      "tool": "wpconvert_check_status",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Rate limited. Retry in ~30s."
+          }
+        ],
+        "isError": true
+      },
+      "requests": [
+        {
+          "route": "GET /api/convert/44444444-4444-4444-8444-444444444444/status",
+          "credential": "api_key",
+          "tool": "wpconvert_check_status",
+          "client": "mcp/<version>"
+        }
+      ]
+    },
+    {
+      "name": "check_status: revoked key",
+      "account": "key",
+      "tool": "wpconvert_check_status",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Invalid or revoked API key."
+          }
+        ],
+        "isError": true
+      },
+      "requests": [
+        {
+          "route": "GET /api/convert/44444444-4444-4444-8444-444444444444/status",
+          "credential": "api_key",
+          "tool": "wpconvert_check_status",
+          "client": "mcp/<version>"
+        }
+      ]
+    },
+    {
+      "name": "create_preview: job failed",
+      "account": "key",
+      "tool": "wpconvert_create_preview",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Conversion failed: Build step crashed.\n\n{\n  \"ok\": false,\n  \"error\": {\n    \"code\": \"conversion_failed\",\n    \"message\": \"Build step crashed.\"\n  },\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_explain_failure\",\n    \"reason\": \"Job failed. Use wpconvert_explain_failure for details and recovery guidance.\"\n  }\n}"
+          }
+        ],
+        "isError": true
+      },
+      "requests": [
+        {
+          "route": "GET /api/convert/44444444-4444-4444-8444-444444444444/status",
+          "credential": "api_key",
+          "tool": "wpconvert_create_preview",
+          "client": "mcp/<version>"
+        }
+      ]
+    },
+    {
+      "name": "create_preview: job failed without a reason",
+      "account": "key",
+      "tool": "wpconvert_create_preview",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Conversion failed: unknown error\n\n{\n  \"ok\": false,\n  \"error\": {\n    \"code\": \"conversion_failed\",\n    \"message\": \"unknown error\"\n  },\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_explain_failure\",\n    \"reason\": \"Job failed. Use wpconvert_explain_failure for details and recovery guidance.\"\n  }\n}"
+          }
+        ],
+        "isError": true
+      },
+      "requests": [
+        {
+          "route": "GET /api/convert/44444444-4444-4444-8444-444444444444/status",
+          "credential": "api_key",
+          "tool": "wpconvert_create_preview",
+          "client": "mcp/<version>"
+        }
+      ]
+    },
+    {
+      "name": "create_preview: not ready",
+      "account": "key",
+      "tool": "wpconvert_create_preview",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Conversion is not ready yet (status=rendering). Poll status until \"done\", then retry.\n\n{\n  \"ok\": false,\n  \"error\": {\n    \"code\": \"conversion_not_ready\",\n    \"message\": \"status=rendering\"\n  },\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_check_status\",\n    \"reason\": \"Poll wpconvert_check_status for the latest job state.\",\n    \"retry_after_seconds\": 15\n  }\n}"
+          }
+        ],
+        "isError": true
+      },
+      "requests": [
+        {
+          "route": "GET /api/convert/44444444-4444-4444-8444-444444444444/status",
+          "credential": "api_key",
+          "tool": "wpconvert_create_preview",
+          "client": "mcp/<version>"
+        }
+      ]
+    },
+    {
+      "name": "create_preview: ready, with expiry and warning",
+      "account": "key",
+      "tool": "wpconvert_create_preview",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Preview ready. Open this URL in a browser to view the theme in WordPress Playground:\nhttps://playground.wordpress.net/#golden\nLink expires 2099-01-01T00:10:00.000Z and is use-limited. Anyone with this URL can view the theme until it expires — treat it as sensitive.\nNote: Large theme: the first load is slow.\n\n{\n  \"ok\": true,\n  \"job_id\": \"44444444-4444-4444-8444-444444444444\",\n  \"playground_url\": \"https://playground.wordpress.net/#golden\",\n  \"expires_at\": \"2099-01-01T00:10:00.000Z\",\n  \"warning\": \"Large theme: the first load is slow.\"\n}"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "route": "GET /api/convert/44444444-4444-4444-8444-444444444444/status",
+          "credential": "api_key",
+          "tool": "wpconvert_create_preview",
+          "client": "mcp/<version>"
+        },
+        {
+          "route": "POST /api/playground/sessions",
+          "credential": "api_key",
+          "tool": "wpconvert_create_preview",
+          "client": "mcp/<version>",
+          "body": {
+            "projectId": "44444444-4444-4444-8444-444444444444"
+          }
+        }
+      ]
+    },
+    {
+      "name": "create_preview: ready, no expiry",
+      "account": "key",
+      "tool": "wpconvert_create_preview",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Preview ready. Open this URL in a browser to view the theme in WordPress Playground:\nhttps://playground.wordpress.net/#golden\nAnyone with this URL can view the theme until it expires — treat it as sensitive.\n\n{\n  \"ok\": true,\n  \"job_id\": \"44444444-4444-4444-8444-444444444444\",\n  \"playground_url\": \"https://playground.wordpress.net/#golden\",\n  \"expires_at\": null,\n  \"warning\": null\n}"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "route": "GET /api/convert/44444444-4444-4444-8444-444444444444/status",
+          "credential": "api_key",
+          "tool": "wpconvert_create_preview",
+          "client": "mcp/<version>"
+        },
+        {
+          "route": "POST /api/playground/sessions",
+          "credential": "api_key",
+          "tool": "wpconvert_create_preview",
+          "client": "mcp/<version>",
+          "body": {
+            "projectId": "44444444-4444-4444-8444-444444444444"
+          }
+        }
+      ]
+    },
+    {
+      "name": "create_preview: guest",
+      "account": "guest",
+      "tool": "wpconvert_create_preview",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Preview ready. Open this URL in a browser to view the theme in WordPress Playground:\nhttps://playground.wordpress.net/#guest\nLink expires 2099-01-01T00:10:00.000Z and is use-limited. Anyone with this URL can view the theme until it expires — treat it as sensitive.\n\n{\n  \"ok\": true,\n  \"job_id\": \"44444444-4444-4444-8444-444444444444\",\n  \"playground_url\": \"https://playground.wordpress.net/#guest\",\n  \"expires_at\": \"2099-01-01T00:10:00.000Z\",\n  \"warning\": null\n}"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "route": "GET /api/convert/cli-guest/44444444-4444-4444-8444-444444444444/status",
+          "credential": "guest_token",
+          "tool": "wpconvert_create_preview",
+          "client": "mcp/<version>"
+        },
+        {
+          "route": "POST /api/playground/cli-guest",
+          "credential": "guest_token",
+          "tool": "wpconvert_create_preview",
+          "client": "mcp/<version>",
+          "body": {
+            "conversionId": "44444444-4444-4444-8444-444444444444"
+          }
+        }
+      ]
+    },
+    {
+      "name": "create_preview: theme expired",
+      "account": "key",
+      "tool": "wpconvert_create_preview",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "This theme has expired and can no longer be previewed. Re-run the conversion."
+          }
+        ],
+        "isError": true
+      },
+      "requests": [
+        {
+          "route": "GET /api/convert/44444444-4444-4444-8444-444444444444/status",
+          "credential": "api_key",
+          "tool": "wpconvert_create_preview",
+          "client": "mcp/<version>"
+        },
+        {
+          "route": "POST /api/playground/sessions",
+          "credential": "api_key",
+          "tool": "wpconvert_create_preview",
+          "client": "mcp/<version>",
+          "body": {
+            "projectId": "44444444-4444-4444-8444-444444444444"
+          }
+        }
+      ]
+    },
+    {
+      "name": "explain_failure: not failed",
+      "account": "key",
+      "tool": "wpconvert_explain_failure",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Job is not failed (status=building).\nIf the conversion is still running, keep polling wpconvert_check_status. If submission itself may have timed out before a job ID was returned, retry wpconvert_convert_folder with the exact same idempotency_key from that prior call. For a deliberate new conversion of changed source, omit the old key."
+          }
+        ]
+      },
+      "requests": [
+        {
+          "route": "GET /api/convert/44444444-4444-4444-8444-444444444444/status",
+          "credential": "api_key",
+          "tool": "wpconvert_explain_failure",
+          "client": "mcp/<version>"
+        }
+      ]
+    },
+    {
+      "name": "explain_failure: failed with a reason",
+      "account": "key",
+      "tool": "wpconvert_explain_failure",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Conversion failed: Build step crashed.\nPolling status again will not restart the conversion. For a deliberate new conversion, call wpconvert_convert_folder without the previous idempotency_key. Do not reuse a failed attempt's key."
+          }
+        ]
+      },
+      "requests": [
+        {
+          "route": "GET /api/convert/44444444-4444-4444-8444-444444444444/status",
+          "credential": "api_key",
+          "tool": "wpconvert_explain_failure",
+          "client": "mcp/<version>"
+        }
+      ]
+    },
+    {
+      "name": "explain_failure: failed without a reason",
+      "account": "key",
+      "tool": "wpconvert_explain_failure",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Conversion failed: unknown error\nPolling status again will not restart the conversion. For a deliberate new conversion, call wpconvert_convert_folder without the previous idempotency_key. Do not reuse a failed attempt's key."
+          }
+        ]
+      },
+      "requests": [
+        {
+          "route": "GET /api/convert/44444444-4444-4444-8444-444444444444/status",
+          "credential": "api_key",
+          "tool": "wpconvert_explain_failure",
+          "client": "mcp/<version>"
+        }
+      ]
+    },
+    {
+      "name": "quota: account",
+      "account": "key",
+      "tool": "wpconvert_quota",
+      "args": {},
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Plan             Pro\nConversion mode  Full\nCan start        Yes\nNext conversion  Subscription quota\nSubscription     18 of 20 remaining\nPAYG             1 credit\nDownload         Available\nAction           Convert\n\n{\n  \"ok\": true,\n  \"quota\": {\n    \"effectivePlan\": \"pro\",\n    \"current\": 2,\n    \"max\": 20,\n    \"remaining\": 18,\n    \"payg_credits\": 1,\n    \"conversion_credits\": 0,\n    \"api_conversion_mode\": \"full\",\n    \"dev_preview_remaining\": 3,\n    \"dev_preview_limit\": 3,\n    \"capabilities\": {\n      \"conversion\": {\n        \"can_start\": true,\n        \"mode\": \"full\",\n        \"consumes\": \"subscription_quota\",\n        \"reason\": \"subscription_quota_available\"\n      },\n      \"usage\": {\n        \"plan\": \"pro\",\n        \"subscription\": {\n          \"limit\": 20,\n          \"used\": 2,\n          \"remaining\": 18\n        },\n        \"payg_credits\": 1,\n        \"starter_credits\": 0,\n        \"free_previews\": {\n          \"limit\": 3,\n          \"used\": 0,\n          \"remaining\": 3\n        }\n      },\n      \"outputs\": {\n        \"download\": {\n          \"available\": true,\n          \"reason\": null\n        }\n      },\n      \"recommended_action\": \"convert_full\",\n      \"reasons\": [\n        \"subscription_quota_available\"\n      ]\n    }\n  },\n  \"capabilities_available\": true,\n  \"summary\": {\n    \"can_start\": true,\n    \"mode\": \"full\",\n    \"consumes\": \"subscription_quota\",\n    \"reason\": \"subscription_quota_available\",\n    \"download_available\": true,\n    \"recommended_action\": \"convert_full\"\n  },\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_convert_folder\",\n    \"reason\": \"Conversion allowed (full mode). Call wpconvert_convert_folder when ready.\"\n  }\n}"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "route": "GET /api/convert/quota",
+          "credential": "api_key",
+          "tool": "wpconvert_quota",
+          "client": "mcp/<version>"
+        }
+      ]
+    },
+    {
+      "name": "quota: account, conversions blocked",
+      "account": "key",
+      "tool": "wpconvert_quota",
+      "args": {},
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Plan             Pro\nConversion mode  Full\nCan start        No\nSubscription     18 of 20 remaining\nPAYG             1 credit\nDownload         Locked\nReason           Subscription quota exhausted\nAction           Buy a PAYG credit or wait for renewal\n\n{\n  \"ok\": true,\n  \"quota\": {\n    \"effectivePlan\": \"pro\",\n    \"current\": 2,\n    \"max\": 20,\n    \"remaining\": 0,\n    \"payg_credits\": 0,\n    \"conversion_credits\": 0,\n    \"api_conversion_mode\": \"full\",\n    \"dev_preview_remaining\": 3,\n    \"dev_preview_limit\": 3,\n    \"capabilities\": {\n      \"conversion\": {\n        \"can_start\": false,\n        \"mode\": \"full\",\n        \"consumes\": \"none\",\n        \"reason\": \"subscription_quota_exhausted\"\n      },\n      \"usage\": {\n        \"plan\": \"pro\",\n        \"subscription\": {\n          \"limit\": 20,\n          \"used\": 2,\n          \"remaining\": 18\n        },\n        \"payg_credits\": 1,\n        \"starter_credits\": 0,\n        \"free_previews\": {\n          \"limit\": 3,\n          \"used\": 0,\n          \"remaining\": 3\n        }\n      },\n      \"outputs\": {\n        \"download\": {\n          \"available\": false,\n          \"reason\": null\n        }\n      },\n      \"recommended_action\": \"buy_payg_or_wait_renewal\",\n      \"reasons\": [\n        \"subscription_quota_exhausted\"\n      ]\n    }\n  },\n  \"capabilities_available\": true,\n  \"summary\": {\n    \"can_start\": false,\n    \"mode\": \"full\",\n    \"consumes\": \"none\",\n    \"reason\": \"subscription_quota_exhausted\",\n    \"download_available\": false,\n    \"recommended_action\": \"buy_payg_or_wait_renewal\"\n  },\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_quota\",\n    \"reason\": \"Conversion blocked. Buy a PAYG credit or wait for renewal. Review quota before retrying.\"\n  }\n}"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "route": "GET /api/convert/quota",
+          "credential": "api_key",
+          "tool": "wpconvert_quota",
+          "client": "mcp/<version>"
+        }
+      ]
+    },
+    {
+      "name": "quota: account, no capabilities (older API)",
+      "account": "key",
+      "tool": "wpconvert_quota",
+      "args": {},
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Plan             Pro\nUsed             1 / 20\nRemaining        19\n\n{\n  \"ok\": true,\n  \"quota\": {\n    \"effectivePlan\": \"pro\",\n    \"current\": 1,\n    \"max\": 20,\n    \"remaining\": 19\n  },\n  \"capabilities_available\": false,\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_convert_folder\",\n    \"reason\": \"Capabilities unavailable from server; server will enforce entitlement on submit.\"\n  }\n}"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "route": "GET /api/convert/quota",
+          "credential": "api_key",
+          "tool": "wpconvert_quota",
+          "client": "mcp/<version>"
+        }
+      ]
+    },
+    {
+      "name": "quota: guest with previews left",
+      "account": "guest",
+      "tool": "wpconvert_quota",
+      "args": {},
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Guest session: 2 free preview(s) left, converting until 2099-01-01T00:00:00Z. Guest conversions can be previewed, not downloaded, until bought (wpconvert_plans).\n\n{\n  \"ok\": true,\n  \"mode\": \"guest\",\n  \"can_convert\": true,\n  \"remaining_previews\": 2,\n  \"convert_until\": \"2099-01-01T00:00:00Z\",\n  \"claim_until\": \"2099-01-08T00:00:00Z\",\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_convert_folder\",\n    \"reason\": \"Guest previews available.\"\n  }\n}"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "quota: guest whose convert window ended",
+      "account": "guest_window_ended",
+      "tool": "wpconvert_quota",
+      "args": {},
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Guest session: 2 free preview(s) left; the convert window has ended. Guest conversions can be previewed, not downloaded, until bought (wpconvert_plans).\n\n{\n  \"ok\": true,\n  \"mode\": \"guest\",\n  \"can_convert\": false,\n  \"remaining_previews\": 2,\n  \"convert_until\": \"2020-01-01T00:00:00Z\",\n  \"claim_until\": \"2099-01-08T00:00:00Z\",\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_connect\",\n    \"arguments\": {\n      \"kind\": \"login\"\n    },\n    \"reason\": \"Sign in to keep converting.\"\n  }\n}"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "quota: not connected",
+      "account": "none",
+      "tool": "wpconvert_quota",
+      "args": {},
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "No API key or guest session. Call wpconvert_connect with kind \"guest\" for free previews without an account, or \"login\" to sign in to WPConvert. Set WPCONVERT_API_KEY in the MCP server environment to use an existing key instead."
+          }
+        ],
+        "isError": true
+      },
+      "requests": []
+    },
+    {
+      "name": "plans: not signed in",
+      "account": "none",
+      "tool": "wpconvert_plans",
+      "args": {},
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "WPConvert options:\n\nStarter  $19.00 one-time\n  Unlock and download this one theme.\n  - Standard WordPress theme export (.zip)\n  Some themes offer an optional $6.00 Pro upgrade at checkout.\n\nPro  $49.00/month or $490.00/year\n  Monthly plan.\n  - 20 conversions per month\n  Starter buyers get $19.00 off the first month.\n\nAgency  $249.00/month or $2,490.00/year\n  Teams.\n  - Unlimited conversions\n\nPay-as-you-go credits  1 credit $25.00, 5 credits $99.00\n  Credits.\n  - No expiry.\n\nPrices shown are the published prices; Stripe shows the final price before you pay.\nBuying needs a WPConvert account. Show these options to the user; if they want one, call wpconvert_connect with kind \"login\", then wpconvert_plans again.\n\n{\n  \"ok\": true,\n  \"personalized\": false,\n  \"currency\": \"usd\",\n  \"options\": [\n    {\n      \"kind\": \"starter\",\n      \"name\": \"Starter\",\n      \"billing\": \"one_time\",\n      \"summary\": \"Unlock and download this one theme.\",\n      \"features\": [\n        \"Standard WordPress theme export (.zip)\"\n      ],\n      \"price_cents\": 1900,\n      \"pro_delta_cents\": 600\n    },\n    {\n      \"kind\": \"pro\",\n      \"name\": \"Pro\",\n      \"billing\": \"subscription\",\n      \"summary\": \"Monthly plan.\",\n      \"features\": [\n        \"20 conversions per month\"\n      ],\n      \"price_cents\": {\n        \"month\": 4900,\n        \"year\": 49000\n      },\n      \"starter_credit_cents\": 1900\n    },\n    {\n      \"kind\": \"agency\",\n      \"name\": \"Agency\",\n      \"billing\": \"subscription\",\n      \"summary\": \"Teams.\",\n      \"features\": [\n        \"Unlimited conversions\"\n      ],\n      \"price_cents\": {\n        \"month\": 24900,\n        \"year\": 249000\n      }\n    },\n    {\n      \"kind\": \"payg\",\n      \"name\": \"Pay-as-you-go credits\",\n      \"billing\": \"one_time\",\n      \"summary\": \"Credits.\",\n      \"features\": [\n        \"No expiry.\"\n      ],\n      \"packs\": [\n        {\n          \"size\": 1,\n          \"price_cents\": 2500\n        },\n        {\n          \"size\": 5,\n          \"price_cents\": 9900\n        }\n      ]\n    }\n  ],\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_connect\",\n    \"arguments\": {\n      \"kind\": \"login\"\n    },\n    \"reason\": \"Buying needs a WPConvert account. Sign in or create one in the browser.\"\n  }\n}"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "route": "GET /api/billing/catalog",
+          "credential": "none",
+          "tool": null,
+          "client": "mcp/<version>"
+        }
+      ]
+    },
+    {
+      "name": "plans: not signed in, for a job",
+      "account": "guest",
+      "tool": "wpconvert_plans",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "WPConvert options:\n\nStarter  $19.00 one-time\n  Unlock and download this one theme.\n  - Standard WordPress theme export (.zip)\n  Some themes offer an optional $6.00 Pro upgrade at checkout.\n\nPro  $49.00/month or $490.00/year\n  Monthly plan.\n  - 20 conversions per month\n  Starter buyers get $19.00 off the first month.\n\nAgency  $249.00/month or $2,490.00/year\n  Teams.\n  - Unlimited conversions\n\nPay-as-you-go credits  1 credit $25.00, 5 credits $99.00\n  Credits.\n  - No expiry.\n\nBuying needs a WPConvert account. Show these options to the user; if they want one, call wpconvert_connect with kind \"login\", then wpconvert_plans again with this jobId.\n\n{\n  \"ok\": true,\n  \"personalized\": false,\n  \"currency\": \"usd\",\n  \"options\": [\n    {\n      \"kind\": \"starter\",\n      \"name\": \"Starter\",\n      \"billing\": \"one_time\",\n      \"summary\": \"Unlock and download this one theme.\",\n      \"features\": [\n        \"Standard WordPress theme export (.zip)\"\n      ],\n      \"price_cents\": 1900,\n      \"pro_delta_cents\": 600\n    },\n    {\n      \"kind\": \"pro\",\n      \"name\": \"Pro\",\n      \"billing\": \"subscription\",\n      \"summary\": \"Monthly plan.\",\n      \"features\": [\n        \"20 conversions per month\"\n      ],\n      \"price_cents\": {\n        \"month\": 4900,\n        \"year\": 49000\n      },\n      \"starter_credit_cents\": 1900\n    },\n    {\n      \"kind\": \"agency\",\n      \"name\": \"Agency\",\n      \"billing\": \"subscription\",\n      \"summary\": \"Teams.\",\n      \"features\": [\n        \"Unlimited conversions\"\n      ],\n      \"price_cents\": {\n        \"month\": 24900,\n        \"year\": 249000\n      }\n    },\n    {\n      \"kind\": \"payg\",\n      \"name\": \"Pay-as-you-go credits\",\n      \"billing\": \"one_time\",\n      \"summary\": \"Credits.\",\n      \"features\": [\n        \"No expiry.\"\n      ],\n      \"packs\": [\n        {\n          \"size\": 1,\n          \"price_cents\": 2500\n        },\n        {\n          \"size\": 5,\n          \"price_cents\": 9900\n        }\n      ]\n    }\n  ],\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_connect\",\n    \"arguments\": {\n      \"kind\": \"login\"\n    },\n    \"reason\": \"Buying needs a WPConvert account. Sign in or create one in the browser.\"\n  }\n}"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "route": "GET /api/billing/catalog",
+          "credential": "none",
+          "tool": null,
+          "client": "mcp/<version>"
+        }
+      ]
+    },
+    {
+      "name": "plans: signed in",
+      "account": "key",
+      "tool": "wpconvert_plans",
+      "args": {},
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "What each option includes:\n\nStarter  $19.00 one-time\n  Unlock and download this one theme.\n  - Standard WordPress theme export (.zip)\n  Some themes offer an optional $6.00 Pro upgrade at checkout.\n\nPro  $49.00/month or $490.00/year\n  Monthly plan.\n  - 20 conversions per month\n  Starter buyers get $19.00 off the first month.\n\nAgency  $249.00/month or $2,490.00/year\n  Teams.\n  - Unlimited conversions\n\nPay-as-you-go credits  1 credit $25.00, 5 credits $99.00\n  Credits.\n  - No expiry.\n\nPrices shown are the published prices; Stripe shows the final price before you pay.\nChoices:\n  1. Pro (monthly): $30.00 today, then $49.00/month\n  2. Pro (yearly): $490.00/year\n  3. Agency (monthly): $249.00/month\n  4. Agency (yearly): $2,490.00/year\n  5. Pay-as-you-go: 1 credit: $25.00\n  6. Pay-as-you-go: 5 credits: $99.00\n\nAsk the user which one they want and let the user choose. Then call wpconvert_checkout with that choice's checkout_arguments.\n\n{\n  \"ok\": true,\n  \"personalized\": true,\n  \"currency\": \"usd\",\n  \"existing_subscriber\": false,\n  \"job\": null,\n  \"choices\": [\n    {\n      \"id\": \"pro-month\",\n      \"label\": \"Pro (monthly)\",\n      \"price\": \"$30.00 today, then $49.00/month\",\n      \"billing\": \"month\",\n      \"checkout_arguments\": {\n        \"kind\": \"pro\",\n        \"interval\": \"month\"\n      }\n    },\n    {\n      \"id\": \"pro-year\",\n      \"label\": \"Pro (yearly)\",\n      \"price\": \"$490.00/year\",\n      \"billing\": \"year\",\n      \"checkout_arguments\": {\n        \"kind\": \"pro\",\n        \"interval\": \"year\"\n      }\n    },\n    {\n      \"id\": \"agency-month\",\n      \"label\": \"Agency (monthly)\",\n      \"price\": \"$249.00/month\",\n      \"billing\": \"month\",\n      \"checkout_arguments\": {\n        \"kind\": \"agency\",\n        \"interval\": \"month\"\n      }\n    },\n    {\n      \"id\": \"agency-year\",\n      \"label\": \"Agency (yearly)\",\n      \"price\": \"$2,490.00/year\",\n      \"billing\": \"year\",\n      \"checkout_arguments\": {\n        \"kind\": \"agency\",\n        \"interval\": \"year\"\n      }\n    },\n    {\n      \"id\": \"payg-1\",\n      \"label\": \"Pay-as-you-go: 1 credit\",\n      \"price\": \"$25.00\",\n      \"billing\": \"once\",\n      \"checkout_arguments\": {\n        \"kind\": \"payg\",\n        \"packSize\": 1\n      }\n    },\n    {\n      \"id\": \"payg-5\",\n      \"label\": \"Pay-as-you-go: 5 credits\",\n      \"price\": \"$99.00\",\n      \"billing\": \"once\",\n      \"checkout_arguments\": {\n        \"kind\": \"payg\",\n        \"packSize\": 5\n      }\n    }\n  ],\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_checkout\",\n    \"reason\": \"Only after the user picks one of these choices.\"\n  }\n}"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "route": "GET /api/billing/cli-options",
+          "credential": "api_key",
+          "tool": "wpconvert_plans",
+          "client": "mcp/<version>"
+        }
+      ]
+    },
+    {
+      "name": "plans: signed in subscriber, job that cannot be unlocked",
+      "account": "key_and_guest",
+      "tool": "wpconvert_plans",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "What each option includes:\n\nStarter  $19.00 one-time\n  Unlock and download this one theme.\n  - Standard WordPress theme export (.zip)\n  Some themes offer an optional $6.00 Pro upgrade at checkout.\n\nPro  $49.00/month or $490.00/year\n  Monthly plan.\n  - 20 conversions per month\n  Starter buyers get $19.00 off the first month.\n\nAgency  $249.00/month or $2,490.00/year\n  Teams.\n  - Unlimited conversions\n\nPay-as-you-go credits  1 credit $25.00, 5 credits $99.00\n  Credits.\n  - No expiry.\n\nPrices shown are the published prices; Stripe shows the final price before you pay.\nThis conversion cannot be unlocked with Starter (converted before Starter existed).\nThis account already has a subscription; plan changes open the billing portal.\n\nChoices:\n  1. Pro (monthly): unlocks this theme and future conversions: $30.00 today, then $49.00/month (You already have a subscription; plan changes happen in the billing portal.)\n  2. Pro (yearly): unlocks this theme and future conversions: $490.00/year (You already have a subscription; plan changes happen in the billing portal.)\n  3. Agency (monthly): unlocks this theme and future conversions: $249.00/month (You already have a subscription; plan changes happen in the billing portal.)\n  4. Agency (yearly): unlocks this theme and future conversions: $2,490.00/year (You already have a subscription; plan changes happen in the billing portal.)\n  5. Pay-as-you-go: 1 credit (one unlocks this theme): $25.00\n  6. Pay-as-you-go: 5 credits (one unlocks this theme): $99.00\n\nAsk the user which one they want and let the user choose. Then call wpconvert_checkout with that choice's checkout_arguments.\n\n{\n  \"ok\": true,\n  \"personalized\": true,\n  \"currency\": \"usd\",\n  \"existing_subscriber\": true,\n  \"job\": {\n    \"id\": \"44444444-4444-4444-8444-444444444444\",\n    \"unlockable\": false,\n    \"reason\": \"converted before Starter existed\"\n  },\n  \"choices\": [\n    {\n      \"id\": \"pro-month\",\n      \"label\": \"Pro (monthly): unlocks this theme and future conversions\",\n      \"price\": \"$30.00 today, then $49.00/month\",\n      \"billing\": \"month\",\n      \"note\": \"You already have a subscription; plan changes happen in the billing portal.\",\n      \"opens\": \"billing_portal\",\n      \"checkout_arguments\": {\n        \"kind\": \"pro\",\n        \"interval\": \"month\",\n        \"jobId\": \"44444444-4444-4444-8444-444444444444\"\n      }\n    },\n    {\n      \"id\": \"pro-year\",\n      \"label\": \"Pro (yearly): unlocks this theme and future conversions\",\n      \"price\": \"$490.00/year\",\n      \"billing\": \"year\",\n      \"note\": \"You already have a subscription; plan changes happen in the billing portal.\",\n      \"opens\": \"billing_portal\",\n      \"checkout_arguments\": {\n        \"kind\": \"pro\",\n        \"interval\": \"year\",\n        \"jobId\": \"44444444-4444-4444-8444-444444444444\"\n      }\n    },\n    {\n      \"id\": \"agency-month\",\n      \"label\": \"Agency (monthly): unlocks this theme and future conversions\",\n      \"price\": \"$249.00/month\",\n      \"billing\": \"month\",\n      \"note\": \"You already have a subscription; plan changes happen in the billing portal.\",\n      \"opens\": \"billing_portal\",\n      \"checkout_arguments\": {\n        \"kind\": \"agency\",\n        \"interval\": \"month\",\n        \"jobId\": \"44444444-4444-4444-8444-444444444444\"\n      }\n    },\n    {\n      \"id\": \"agency-year\",\n      \"label\": \"Agency (yearly): unlocks this theme and future conversions\",\n      \"price\": \"$2,490.00/year\",\n      \"billing\": \"year\",\n      \"note\": \"You already have a subscription; plan changes happen in the billing portal.\",\n      \"opens\": \"billing_portal\",\n      \"checkout_arguments\": {\n        \"kind\": \"agency\",\n        \"interval\": \"year\",\n        \"jobId\": \"44444444-4444-4444-8444-444444444444\"\n      }\n    },\n    {\n      \"id\": \"payg-1\",\n      \"label\": \"Pay-as-you-go: 1 credit (one unlocks this theme)\",\n      \"price\": \"$25.00\",\n      \"billing\": \"once\",\n      \"checkout_arguments\": {\n        \"kind\": \"payg\",\n        \"packSize\": 1,\n        \"jobId\": \"44444444-4444-4444-8444-444444444444\"\n      }\n    },\n    {\n      \"id\": \"payg-5\",\n      \"label\": \"Pay-as-you-go: 5 credits (one unlocks this theme)\",\n      \"price\": \"$99.00\",\n      \"billing\": \"once\",\n      \"checkout_arguments\": {\n        \"kind\": \"payg\",\n        \"packSize\": 5,\n        \"jobId\": \"44444444-4444-4444-8444-444444444444\"\n      }\n    }\n  ],\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_checkout\",\n    \"reason\": \"Only after the user picks one of these choices.\"\n  }\n}"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "route": "GET /api/billing/cli-options?jobId=44444444-4444-4444-8444-444444444444",
+          "credential": "api_key+guest_token",
+          "tool": "wpconvert_plans",
+          "client": "mcp/<version>"
+        }
+      ]
+    },
+    {
+      "name": "plans: invalid jobId",
+      "account": "key",
+      "tool": "wpconvert_plans",
+      "args": {
+        "jobId": "not-a-job"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "jobId must be a conversion id from wpconvert_convert_folder."
+          }
+        ],
+        "isError": true
+      },
+      "requests": []
+    },
+    {
+      "name": "checkout: invalid kind",
+      "account": "key",
+      "tool": "wpconvert_checkout",
+      "args": {
+        "kind": "trial"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "kind must be starter, pro, agency or payg. Call wpconvert_plans and pass the chosen option's checkout_arguments.\n\n{\n  \"ok\": false,\n  \"error\": {\n    \"code\": \"invalid_request\",\n    \"message\": \"kind must be starter, pro, agency or payg.\"\n  },\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_plans\",\n    \"reason\": \"Get the exact checkout arguments for each option.\"\n  }\n}"
+          }
+        ],
+        "isError": true
+      },
+      "requests": []
+    },
+    {
+      "name": "checkout: starter without a jobId",
+      "account": "key",
+      "tool": "wpconvert_checkout",
+      "args": {
+        "kind": "starter"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Starter unlocks one theme; pass its jobId. Call wpconvert_plans and pass the chosen option's checkout_arguments.\n\n{\n  \"ok\": false,\n  \"error\": {\n    \"code\": \"invalid_request\",\n    \"message\": \"Starter unlocks one theme; pass its jobId.\"\n  },\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_plans\",\n    \"reason\": \"Get the exact checkout arguments for each option.\"\n  }\n}"
+          }
+        ],
+        "isError": true
+      },
+      "requests": []
+    },
+    {
+      "name": "checkout: payg with an unknown pack",
+      "account": "key",
+      "tool": "wpconvert_checkout",
+      "args": {
+        "kind": "payg",
+        "packSize": 7
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "packSize must be one of 1, 5, 10, 30. Call wpconvert_plans and pass the chosen option's checkout_arguments.\n\n{\n  \"ok\": false,\n  \"error\": {\n    \"code\": \"invalid_request\",\n    \"message\": \"packSize must be one of 1, 5, 10, 30.\"\n  },\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_plans\",\n    \"reason\": \"Get the exact checkout arguments for each option.\"\n  }\n}"
+          }
+        ],
+        "isError": true
+      },
+      "requests": []
+    },
+    {
+      "name": "checkout: not signed in",
+      "account": "none",
+      "tool": "wpconvert_checkout",
+      "args": {
+        "kind": "payg",
+        "packSize": 5
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Buying needs a WPConvert account. Call wpconvert_connect with kind \"login\" so the user can sign in, then call wpconvert_checkout again.\n\n{\n  \"ok\": false,\n  \"error\": {\n    \"code\": \"missing_credentials\",\n    \"message\": \"Sign in to buy.\"\n  },\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_connect\",\n    \"arguments\": {\n      \"kind\": \"login\"\n    },\n    \"reason\": \"Buying needs a WPConvert account. Sign in or create one in the browser.\"\n  }\n}"
+          }
+        ],
+        "isError": true
+      },
+      "requests": []
+    },
+    {
+      "name": "checkout: starter for a job",
+      "account": "key_and_guest",
+      "tool": "wpconvert_checkout",
+      "args": {
+        "kind": "starter",
+        "jobId": "44444444-4444-4444-8444-444444444444",
+        "promo": "IGNORED"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Ask the user to open this link to pay on Stripe (do not open it yourself):\n  https://checkout.stripe.com/c/pay/cs_test_golden\nWhen they say they have paid, call wpconvert_check_status.\n\n{\n  \"ok\": true,\n  \"checkout_url\": \"https://checkout.stripe.com/c/pay/cs_test_golden\",\n  \"claimed\": [\n    \"44444444-4444-4444-8444-444444444444\"\n  ],\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_check_status\",\n    \"arguments\": {\n      \"jobId\": \"44444444-4444-4444-8444-444444444444\"\n    },\n    \"reason\": \"After the user pays, the download unlocks within a minute.\"\n  }\n}"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "route": "POST /api/billing/cli-checkout",
+          "credential": "api_key+guest_token",
+          "tool": "wpconvert_checkout",
+          "client": "mcp/<version>",
+          "body": {
+            "kind": "starter",
+            "jobId": "44444444-4444-4444-8444-444444444444"
+          }
+        }
+      ]
+    },
+    {
+      "name": "checkout: payg pack",
+      "account": "key",
+      "tool": "wpconvert_checkout",
+      "args": {
+        "kind": "payg",
+        "packSize": 5
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Ask the user to open this link to pay on Stripe (do not open it yourself):\n  https://checkout.stripe.com/c/pay/cs_test_payg\nWhen they say they have paid, call wpconvert_quota.\n\n{\n  \"ok\": true,\n  \"checkout_url\": \"https://checkout.stripe.com/c/pay/cs_test_payg\",\n  \"claimed\": [],\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_quota\",\n    \"reason\": \"After the user pays, the plan or credits show up here.\"\n  }\n}"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "route": "POST /api/billing/cli-checkout",
+          "credential": "api_key",
+          "tool": "wpconvert_checkout",
+          "client": "mcp/<version>",
+          "body": {
+            "kind": "payg",
+            "packSize": 5
+          }
+        }
+      ]
+    },
+    {
+      "name": "checkout: subscriber is sent to the billing portal",
+      "account": "key",
+      "tool": "wpconvert_checkout",
+      "args": {
+        "kind": "agency",
+        "interval": "year"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "This account already has a Pro subscription.\nAsk the user to open this link to change plans in the billing portal (do not open it yourself):\n  https://billing.stripe.com/p/session/test_golden\n\n{\n  \"ok\": true,\n  \"portal_url\": \"https://billing.stripe.com/p/session/test_golden\",\n  \"claimed\": [],\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_quota\",\n    \"reason\": \"After the user pays, the plan or credits show up here.\"\n  }\n}"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "route": "POST /api/billing/cli-checkout",
+          "credential": "api_key",
+          "tool": "wpconvert_checkout",
+          "client": "mcp/<version>",
+          "body": {
+            "kind": "agency",
+            "interval": "year"
+          }
+        }
+      ]
+    },
+    {
+      "name": "checkout: already subscribed",
+      "account": "key",
+      "tool": "wpconvert_checkout",
+      "args": {
+        "kind": "pro",
+        "interval": "month"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Already subscribed to Pro.\nAsk the user to open the billing portal to change plans:\n  https://billing.stripe.com/p/session/test_golden\n\n{\n  \"ok\": false,\n  \"error\": {\n    \"code\": \"already_subscribed\",\n    \"message\": \"Already subscribed to Pro.\"\n  },\n  \"portal_url\": \"https://billing.stripe.com/p/session/test_golden\"\n}"
+          }
+        ],
+        "isError": true
+      },
+      "requests": [
+        {
+          "route": "POST /api/billing/cli-checkout",
+          "credential": "api_key",
+          "tool": "wpconvert_checkout",
+          "client": "mcp/<version>",
+          "body": {
+            "kind": "pro",
+            "interval": "month"
+          }
+        }
+      ]
+    },
+    {
+      "name": "checkout: server error",
+      "account": "key",
+      "tool": "wpconvert_checkout",
+      "args": {
+        "kind": "pro",
+        "interval": "month"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Stripe is unavailable."
+          }
+        ],
+        "isError": true
+      },
+      "requests": [
+        {
+          "route": "POST /api/billing/cli-checkout",
+          "credential": "api_key",
+          "tool": "wpconvert_checkout",
+          "client": "mcp/<version>",
+          "body": {
+            "kind": "pro",
+            "interval": "month"
+          }
+        }
+      ]
+    },
+    {
+      "name": "download: guest session without a key",
+      "account": "guest",
+      "tool": "wpconvert_download_result",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Guest previews cannot be downloaded. To download this theme, call wpconvert_plans with this jobId and let the user choose how to unlock it (Starter unlocks just this theme).\n\n{\n  \"ok\": false,\n  \"error\": {\n    \"code\": \"upgrade_required\",\n    \"message\": \"Guest previews cannot be downloaded. To download this theme, call wpconvert_plans with this jobId and let the user choose how to unlock it (Starter unlocks just this theme).\",\n    \"reason\": \"guest_preview\",\n    \"retry_safe\": false\n  },\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_plans\",\n    \"arguments\": {\n      \"jobId\": \"44444444-4444-4444-8444-444444444444\"\n    },\n    \"reason\": \"Show the user the ways to unlock this theme.\"\n  }\n}"
+          }
+        ],
+        "isError": true
+      },
+      "requests": []
+    },
+    {
+      "name": "download: not ready",
+      "account": "key",
+      "tool": "wpconvert_download_result",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "No download URL available yet. Poll status until done.\n\n{\n  \"ok\": false,\n  \"error\": {\n    \"code\": \"conversion_not_ready\",\n    \"message\": \"No download URL available yet.\"\n  },\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_check_status\",\n    \"reason\": \"Job still running. Poll wpconvert_check_status until done.\",\n    \"retry_after_seconds\": 15\n  }\n}"
+          }
+        ],
+        "isError": true
+      },
+      "requests": [
+        {
+          "route": "GET /api/download/44444444-4444-4444-8444-444444444444",
+          "credential": "api_key",
+          "tool": "wpconvert_download_result",
+          "client": "mcp/<version>"
+        }
+      ]
+    },
+    {
+      "name": "download: locked to previews",
+      "account": "key",
+      "tool": "wpconvert_download_result",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Download locked. Upgrade to PRO or add PAYG credits, then re-run this conversion to download theme.zip.\nCall wpconvert_quota to review upgrade options, or wpconvert_plans to show the user what they can buy.\n\n{\n  \"ok\": false,\n  \"error\": {\n    \"code\": \"upgrade_required\",\n    \"message\": \"Download locked. Upgrade to PRO or add PAYG credits, then re-run this conversion to download theme.zip.\",\n    \"reason\": \"preview_only_job\",\n    \"retry_safe\": false\n  },\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_quota\",\n    \"reason\": \"Download locked for preview-only job. Review quota and upgrade before re-converting.\"\n  }\n}"
+          }
+        ],
+        "isError": true
+      },
+      "requests": [
+        {
+          "route": "GET /api/download/44444444-4444-4444-8444-444444444444",
+          "credential": "api_key",
+          "tool": "wpconvert_download_result",
+          "client": "mcp/<version>"
+        }
+      ]
+    },
+    {
+      "name": "download: unbought guest job seen with a key",
+      "account": "key_and_guest",
+      "tool": "wpconvert_download_result",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Guest previews cannot be downloaded. To download this theme, call wpconvert_plans with this jobId and let the user choose how to unlock it (Starter unlocks just this theme).\n\n{\n  \"ok\": false,\n  \"error\": {\n    \"code\": \"upgrade_required\",\n    \"message\": \"Guest previews cannot be downloaded. To download this theme, call wpconvert_plans with this jobId and let the user choose how to unlock it (Starter unlocks just this theme).\",\n    \"reason\": \"guest_preview\",\n    \"retry_safe\": false\n  },\n  \"recommended_next\": {\n    \"tool\": \"wpconvert_plans\",\n    \"arguments\": {\n      \"jobId\": \"44444444-4444-4444-8444-444444444444\"\n    },\n    \"reason\": \"Show the user the ways to unlock this theme.\"\n  }\n}"
+          }
+        ],
+        "isError": true
+      },
+      "requests": [
+        {
+          "route": "GET /api/download/44444444-4444-4444-8444-444444444444",
+          "credential": "api_key",
+          "tool": "wpconvert_download_result",
+          "client": "mcp/<version>"
+        }
+      ]
+    },
+    {
+      "name": "download: saved to disk",
+      "account": "key",
+      "tool": "wpconvert_download_result",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444",
+        "outDir": "<home>/downloads"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Saved acme-theme.zip (21 B) to <home>/downloads/acme-theme.zip\n\n{\n  \"ok\": true,\n  \"job_id\": \"44444444-4444-4444-8444-444444444444\",\n  \"path\": \"<home>/downloads/acme-theme.zip\",\n  \"size_bytes\": 21\n}"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "route": "GET /api/download/44444444-4444-4444-8444-444444444444",
+          "credential": "api_key",
+          "tool": "wpconvert_download_result",
+          "client": "mcp/<version>"
+        },
+        {
+          "route": "GET /files/acme-theme.zip",
+          "credential": "none",
+          "tool": null,
+          "client": null
+        }
+      ],
+      "saved": {
+        "acme-theme.zip": "PK golden theme bytes"
+      }
+    },
+    {
+      "name": "download: saved under the job id when unnamed",
+      "account": "key",
+      "tool": "wpconvert_download_result",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444",
+        "outDir": "<home>/downloads"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Saved 44444444-4444-4444-8444-444444444444-theme.zip (2 B) to <home>/downloads/44444444-4444-4444-8444-444444444444-theme.zip\n\n{\n  \"ok\": true,\n  \"job_id\": \"44444444-4444-4444-8444-444444444444\",\n  \"path\": \"<home>/downloads/44444444-4444-4444-8444-444444444444-theme.zip\",\n  \"size_bytes\": 2\n}"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "route": "GET /api/download/44444444-4444-4444-8444-444444444444",
+          "credential": "api_key",
+          "tool": "wpconvert_download_result",
+          "client": "mcp/<version>"
+        },
+        {
+          "route": "GET /files/theme.zip",
+          "credential": "none",
+          "tool": null,
+          "client": null
+        }
+      ],
+      "saved": {
+        "44444444-4444-4444-8444-444444444444-theme.zip": "PK"
+      }
+    },
+    {
+      "name": "download: storage fetch fails",
+      "account": "key",
+      "tool": "wpconvert_download_result",
+      "args": {
+        "jobId": "44444444-4444-4444-8444-444444444444",
+        "outDir": "<home>/downloads"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Failed to download theme (HTTP 404)."
+          }
+        ],
+        "isError": true
+      },
+      "requests": [
+        {
+          "route": "GET /api/download/44444444-4444-4444-8444-444444444444",
+          "credential": "api_key",
+          "tool": "wpconvert_download_result",
+          "client": "mcp/<version>"
+        },
+        {
+          "route": "GET /files/missing.zip",
+          "credential": "none",
+          "tool": null,
+          "client": null
+        }
+      ],
+      "saved": {}
+    }
+  ],
+  "api_errors": [
+    {
+      "code": "missing_credentials",
+      "text": "No API key or guest session. Call wpconvert_connect with kind \"guest\" for free previews without an account, or \"login\" to sign in to WPConvert. Set WPCONVERT_API_KEY in the MCP server environment to use an existing key instead."
+    },
+    {
+      "code": "guest_previews_used",
+      "message": "All free previews are used.",
+      "text": "All free previews are used. To keep converting, sign in with wpconvert_connect kind \"login\"."
+    },
+    {
+      "code": "guest_token_expired",
+      "text": "Guest previews are not available right now. To keep converting, sign in with wpconvert_connect kind \"login\"."
+    },
+    {
+      "code": "guest_capacity",
+      "message": "Guest previews are busy.",
+      "text": "Guest previews are busy. To keep converting, sign in with wpconvert_connect kind \"login\"."
+    },
+    {
+      "code": "guest_token_invalid",
+      "text": "Guest previews are not available right now. To keep converting, sign in with wpconvert_connect kind \"login\"."
+    },
+    {
+      "code": "link_expired",
+      "text": "The link expired. Call wpconvert_connect again for a new one."
+    },
+    {
+      "code": "key_limit_reached",
+      "text": "This account has the maximum number of API keys. Revoke one in the WPConvert dashboard, then connect again."
+    },
+    {
+      "code": "key_limit_reached",
+      "message": "Ten keys already.",
+      "text": "Ten keys already."
+    },
+    {
+      "code": "already_subscribed",
+      "text": "This account already has a subscription."
+    },
+    {
+      "code": "already_subscribed",
+      "message": "Already on Pro.",
+      "details": {
+        "portal_url": "https://billing.stripe.com/p/session/x"
+      },
+      "text": "Already on Pro. Manage the plan: https://billing.stripe.com/p/session/x"
+    },
+    {
+      "code": "invalid_api_key",
+      "message": "ignored",
+      "text": "Invalid or revoked API key."
+    },
+    {
+      "code": "insufficient_credits",
+      "text": "Out of credits."
+    },
+    {
+      "code": "insufficient_credits",
+      "details": {
+        "buy_credits_url": "https://wpconvert.ai/pricing"
+      },
+      "text": "Out of credits. Buy credits: https://wpconvert.ai/pricing"
+    },
+    {
+      "code": "quota_exceeded",
+      "text": "Monthly quota exceeded. Buy credits or wait for reset."
+    },
+    {
+      "code": "upgrade_required",
+      "text": "This feature requires the Pro plan or credits."
+    },
+    {
+      "code": "upgrade_required",
+      "message": "Agency only.",
+      "text": "Agency only."
+    },
+    {
+      "code": "upgrade_required",
+      "details": {
+        "preview_only": true
+      },
+      "text": "Download locked. Upgrade to PRO or add PAYG credits, then re-run this conversion to download theme.zip."
+    },
+    {
+      "code": "upgrade_required",
+      "details": {
+        "reason": "dev_preview_limit"
+      },
+      "text": "Download locked. Upgrade to PRO or add PAYG credits, then re-run this conversion to download theme.zip."
+    },
+    {
+      "code": "upgrade_required",
+      "details": {
+        "reason": "preview_only_job"
+      },
+      "text": "Download locked. Upgrade to PRO or add PAYG credits, then re-run this conversion to download theme.zip."
+    },
+    {
+      "code": "too_many_active_jobs",
+      "text": "Too many conversions in progress (?/?). Wait and retry."
+    },
+    {
+      "code": "too_many_active_jobs",
+      "details": {
+        "current": 3,
+        "cap": 3
+      },
+      "text": "Too many conversions in progress (3/3). Wait and retry."
+    },
+    {
+      "code": "rate_limited",
+      "text": "Rate limited."
+    },
+    {
+      "code": "rate_limited",
+      "details": {
+        "retry_after": 12
+      },
+      "text": "Rate limited. Retry in ~12s."
+    },
+    {
+      "code": "conversion_not_ready",
+      "text": "Conversion is not ready yet (status: pending). Poll status until done."
+    },
+    {
+      "code": "conversion_not_ready",
+      "details": {
+        "status": "building"
+      },
+      "text": "Conversion is not ready yet (status: building). Poll status until done."
+    },
+    {
+      "code": "theme_expired",
+      "text": "This theme has expired and can no longer be previewed. Re-run the conversion."
+    },
+    {
+      "code": "theme_too_large_for_preview",
+      "text": "This theme is too large for in-browser preview. Download it and test on a WordPress install instead."
+    },
+    {
+      "code": "theme_too_large_for_preview",
+      "message": "Over 100MB.",
+      "text": "Over 100MB."
+    },
+    {
+      "code": "idempotency_request_in_progress",
+      "text": "The conversion request was accepted but its job ID is not available yet. Retry wpconvert_convert_folder with the same idempotency_key."
+    },
+    {
+      "code": "idempotency_payload_mismatch",
+      "text": "This idempotency_key was already used for different request material. Omit the key for a deliberate new conversion."
+    },
+    {
+      "code": "idempotency_previous_failed",
+      "text": "A previous conversion attempt with this idempotency_key failed. Omit the key for a deliberate new conversion."
+    },
+    {
+      "code": "invalid_idempotency_key",
+      "text": "Invalid idempotency_key. Provide a prior convert result key, or omit the field for a new conversion."
+    },
+    {
+      "code": "network_error",
+      "text": "Ambiguous network error. Retry wpconvert_convert_folder with the same idempotency_key if one was returned."
+    },
+    {
+      "code": "some_future_code",
+      "message": "A message from the server.",
+      "text": "A message from the server."
+    },
+    {
+      "code": "some_future_code",
+      "text": "Request failed."
+    }
+  ]
+}

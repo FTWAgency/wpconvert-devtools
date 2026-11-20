@@ -1,27 +1,24 @@
 /**
- * Connecting without a key, and buying, for the MCP server.
+ * Connecting without a key, for the stdio MCP server.
  *
  * wpconvert_connect starts a browser link (guest check or sign-in) and keeps
  * the device code in memory; wpconvert_connect_status polls briefly and saves
  * the secret to ~/.wpconvert/config.json (0600) through the CLI's own code.
- * wpconvert_plans shows every option; wpconvert_checkout sends only the
- * option the user picked. No tool result ever contains a token, key or
- * device code, and nothing here opens a browser.
+ * No tool result ever contains a token, key or device code, and nothing here
+ * opens a browser. Buying (wpconvert_plans, wpconvert_checkout) is shared
+ * with the hosted server, in shared/handlers.mjs.
  */
 
 import { createRequire } from 'module';
-import { ok, fail, redactSecrets } from './result.mjs';
+import { ok, fail } from './shared/result.mjs';
+import { SIGN_IN_NEXT } from './shared/handlers.mjs';
 
 const require = createRequire(import.meta.url);
 const api = require('wpconvert/src/api');
 const config = require('wpconvert/src/config');
 const { storeApproval, isTransient } = require('wpconvert/src/device');
-const { PACK_SIZES, formatPlans, buildMenu } = require('wpconvert/src/purchase');
 
 const CONNECT_KINDS = ['guest', 'login'];
-const CHECKOUT_KINDS = ['starter', 'pro', 'agency', 'payg'];
-const INTERVALS = ['month', 'year'];
-const UUID_RX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_INTERVAL_S = 60;
 const SLOW_DOWN_STEP_S = 5;
 
@@ -32,10 +29,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const CONNECT_NEXT = {
   guest: { tool: 'wpconvert_connect', arguments: { kind: 'guest' }, reason: 'Start a free guest preview (no account needed).' },
-  login: { tool: 'wpconvert_connect', arguments: { kind: 'login' }, reason: 'Buying needs a WPConvert account. Sign in or create one in the browser.' },
+  login: SIGN_IN_NEXT,
 };
 
-export const ACCOUNT_TOOLS = [
+export const CONNECT_TOOLS = [
   {
     name: 'wpconvert_connect',
     description:
@@ -53,30 +50,6 @@ export const ACCOUNT_TOOLS = [
     description:
       'Check whether the user finished the wpconvert_connect link (waits up to about 20 seconds). Call it again while it says "waiting". Also reports how WPConvert is connected now: guest (with previews left) or account (with a masked email). Never returns the token or key.',
     inputSchema: { type: 'object', properties: {} },
-  },
-  {
-    name: 'wpconvert_plans',
-    description:
-      'List what the user can buy: Starter (unlock one theme), Pro, Agency (monthly or yearly) and pay-as-you-go credit packs, with what each includes and today\'s price. Pass jobId to see options for unlocking that conversion. Show all options to the user and let them choose; do not pick for them. Then call wpconvert_checkout with the checkout_arguments of their choice.',
-    inputSchema: {
-      type: 'object',
-      properties: { jobId: { type: 'string', description: 'Conversion to unlock (optional).' } },
-    },
-  },
-  {
-    name: 'wpconvert_checkout',
-    description:
-      'Create a Stripe checkout link for the option the user picked from wpconvert_plans. Call this only after the user has chosen; pass that choice\'s checkout_arguments unchanged. Needs a signed-in account (wpconvert_connect kind "login"). Returns a link the user opens to pay; never open it yourself and never pay on their behalf.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        kind: { type: 'string', enum: CHECKOUT_KINDS },
-        jobId: { type: 'string', description: 'Conversion to unlock. Required for starter.' },
-        interval: { type: 'string', enum: INTERVALS, description: 'Required for pro and agency.' },
-        packSize: { type: 'number', enum: PACK_SIZES, description: 'Required for payg.' },
-      },
-      required: ['kind'],
-    },
   },
 ];
 
@@ -236,151 +209,10 @@ async function connectStatus() {
   });
 }
 
-function badJobId(jobId) {
-  return jobId != null && (typeof jobId !== 'string' || !UUID_RX.test(jobId));
-}
-
-async function plans(args) {
-  const jobId = args && args.jobId ? args.jobId : undefined;
-  if (badJobId(jobId)) return fail('jobId must be a conversion id from wpconvert_convert_folder.');
-
-  if (!api.hasApiKey()) {
-    const catalog = await api.getCatalog();
-    const text = [
-      'WPConvert options:',
-      '',
-      ...formatPlans(catalog),
-      'Buying needs a WPConvert account. Show these options to the user; if they want one, call wpconvert_connect with kind "login", then wpconvert_plans again' +
-        (jobId ? ' with this jobId.' : '.'),
-    ].join('\n');
-    return ok(text, {
-      ok: true,
-      personalized: false,
-      currency: catalog.currency,
-      options: catalog.options,
-      recommended_next: CONNECT_NEXT.login,
-    });
-  }
-
-  const options = await api.getCheckoutOptions(jobId);
-  const menu = buildMenu(options, { jobId });
-  const choices = menu.map((e) => ({
-    id: e.id,
-    label: e.label,
-    price: e.price,
-    billing: e.billing,
-    ...(e.note ? { note: e.note } : {}),
-    ...(e.portal ? { opens: 'billing_portal' } : {}),
-    checkout_arguments: { ...e.request, ...(jobId ? { jobId } : {}) },
-  }));
-  const notes = [];
-  if (options.job && options.job.unlockable === false) {
-    notes.push(`This conversion cannot be unlocked with Starter${options.job.reason ? ` (${options.job.reason})` : ''}.`);
-  }
-  if (options.existing_subscriber) notes.push('This account already has a subscription; plan changes open the billing portal.');
-  const text = [
-    'What each option includes:',
-    '',
-    ...formatPlans(options),
-    ...notes,
-    ...(notes.length ? [''] : []),
-    'Choices:',
-    ...choices.map((c, i) => `  ${i + 1}. ${c.label}: ${c.price}${c.note ? ` (${c.note})` : ''}`),
-    '',
-    'Ask the user which one they want and let the user choose. Then call wpconvert_checkout with that choice\'s checkout_arguments.',
-  ].join('\n');
-  return ok(text, {
-    ok: true,
-    personalized: true,
-    currency: options.currency,
-    existing_subscriber: options.existing_subscriber === true,
-    job: options.job || null,
-    choices,
-    recommended_next: { tool: 'wpconvert_checkout', reason: 'Only after the user picks one of these choices.' },
-  });
-}
-
-/** The checkout request, built only from fields that mean something for this kind. */
-function checkoutRequest(args) {
-  const a = args || {};
-  if (!CHECKOUT_KINDS.includes(a.kind)) return { error: 'kind must be starter, pro, agency or payg.' };
-  if (badJobId(a.jobId)) return { error: 'jobId must be a conversion id from wpconvert_convert_folder.' };
-  const jobId = a.jobId || undefined;
-  const request = { kind: a.kind };
-  if (a.kind === 'starter') {
-    if (!jobId) return { error: 'Starter unlocks one theme; pass its jobId.' };
-    if (a.interval != null || a.packSize != null) return { error: 'Starter takes only a jobId.' };
-  } else if (a.kind === 'payg') {
-    if (!PACK_SIZES.includes(Number(a.packSize))) return { error: `packSize must be one of ${PACK_SIZES.join(', ')}.` };
-    if (a.interval != null) return { error: 'interval only applies to pro and agency.' };
-    request.packSize = Number(a.packSize);
-  } else {
-    if (!INTERVALS.includes(a.interval)) return { error: 'interval must be "month" or "year" (the user\'s choice from wpconvert_plans).' };
-    if (a.packSize != null) return { error: 'packSize only applies to payg.' };
-    request.interval = a.interval;
-  }
-  if (jobId) request.jobId = jobId;
-  return { request };
-}
-
-async function checkout(args) {
-  const { request, error } = checkoutRequest(args);
-  if (error) {
-    return fail(`${error} Call wpconvert_plans and pass the chosen option's checkout_arguments.`, {
-      ok: false,
-      error: { code: 'invalid_request', message: error },
-      recommended_next: { tool: 'wpconvert_plans', reason: 'Get the exact checkout arguments for each option.' },
-    });
-  }
-  if (!api.hasApiKey()) {
-    return fail('Buying needs a WPConvert account. Call wpconvert_connect with kind "login" so the user can sign in, then call wpconvert_checkout again.', {
-      ok: false,
-      error: { code: 'missing_credentials', message: 'Sign in to buy.' },
-      recommended_next: CONNECT_NEXT.login,
-    });
-  }
-
-  let result;
-  try {
-    result = await api.createCheckout(request);
-  } catch (e) {
-    if (e && e.name === 'ApiError' && e.code === 'already_subscribed') {
-      const portal = e.details && e.details.portal_url;
-      return fail(`${redactSecrets(e.message)}${portal ? `\nAsk the user to open the billing portal to change plans:\n  ${portal}` : ''}`, {
-        ok: false,
-        error: { code: 'already_subscribed', message: redactSecrets(e.message) },
-        ...(portal ? { portal_url: portal } : {}),
-      });
-    }
-    throw e;
-  }
-
-  const after = request.jobId
-    ? { tool: 'wpconvert_check_status', arguments: { jobId: request.jobId }, reason: 'After the user pays, the download unlocks within a minute.' }
-    : { tool: 'wpconvert_quota', reason: 'After the user pays, the plan or credits show up here.' };
-
-  if (result.portal_url) {
-    return ok(`${result.message || 'This account already has a subscription.'}\nAsk the user to open this link to change plans in the billing portal (do not open it yourself):\n  ${result.portal_url}`, {
-      ok: true,
-      portal_url: result.portal_url,
-      claimed: result.claimed || [],
-      recommended_next: after,
-    });
-  }
-  return ok(`Ask the user to open this link to pay on Stripe (do not open it yourself):\n  ${result.checkout_url}\nWhen they say they have paid, call ${after.tool}.`, {
-    ok: true,
-    checkout_url: result.checkout_url,
-    claimed: result.claimed || [],
-    recommended_next: after,
-  });
-}
-
-export async function handleAccountCall(name, args) {
+export async function handleConnectCall(name, args) {
   switch (name) {
     case 'wpconvert_connect': return connect(args);
     case 'wpconvert_connect_status': return connectStatus();
-    case 'wpconvert_plans': return plans(args);
-    case 'wpconvert_checkout': return checkout(args);
     default: return null;
   }
 }

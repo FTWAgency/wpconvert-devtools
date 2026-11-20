@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-11-19
+
+### Changed — `wpconvert@0.4.1` (CLI) and `@wpconvert/mcp@0.4.1` (MCP)
+
+- `--type elementor` (CLI) and type `"elementor"` (MCP) no longer say "Elementor and Gutenberg are coming soon". They now say Elementor exports are made in the WPConvert dashboard, with a link to its Elementor flow (`https://app.wpconvert.ai/dashboard?convert=elementor`). Gutenberg is still coming soon, and both still make WordPress themes only.
+- READMEs: the hosted MCP server at `https://mcp.wpconvert.ai/mcp` (nothing to install, sign in once) is listed beside the npm package, and a failed conversion's credit "goes back to your account" (was "refunded").
+
+### Internal — `@wpconvert/mcp@0.4.1`
+
+- The tool handlers moved to `src/shared/`, which the hosted MCP server also runs. The stdio server's tools and results are unchanged apart from the Elementor message: golden tests in `tests/fixtures/` lock them, and the release was run side by side with 0.4.0.
+- Depends exactly on `wpconvert@0.4.1`.
+
 ## [0.4.0] - 2026-10-19
 
 ### Added — `wpconvert@0.4.0` (CLI)

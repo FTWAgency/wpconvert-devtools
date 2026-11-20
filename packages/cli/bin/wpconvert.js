@@ -36,7 +36,14 @@ const PAYMENT_WAIT_MS = 15 * 60 * 1000;
 const PAYMENT_POLL_MS = 3000;
 const EXIT_NEEDS_CHOICE = 2;
 const VALID_TYPES = ['theme']; // only "theme" is supported via the CLI for now
-const COMING_SOON_TYPES = ['elementor', 'gutenberg']; // not available via CLI/API yet
+const COMING_SOON_TYPES = ['elementor', 'gutenberg']; // not available via the CLI/API
+// Elementor exports are a dashboard feature; Gutenberg is not available anywhere yet.
+const ELEMENTOR_DASHBOARD_URL = 'https://app.wpconvert.ai/dashboard?convert=elementor';
+function unavailableTypeMessage(type) {
+  return type === 'elementor'
+    ? `--type elementor isn't available in the CLI, which makes WordPress themes. Elementor exports are made in the WPConvert dashboard: ${ELEMENTOR_DASHBOARD_URL}`
+    : `--type ${type} isn't available yet — only "theme" is supported. Gutenberg export is coming soon.`;
+}
 const PREVIEW_LOCKED_DOWNLOAD_COPY =
   'Download locked. Upgrade to PRO or add PAYG credits, then re-run this conversion to download theme.zip.';
 /** Explicit capability denial (capabilities.conversion.can_start === false). */
@@ -254,7 +261,7 @@ program
   .command('convert')
   .description('Convert a folder (default) or a URL (coming soon) into a WordPress theme.')
   .argument('<target>', 'path to a folder, or a URL (URL conversion not available yet)')
-  .option('--type <type>', `export type: ${VALID_TYPES.join(' | ')} (Elementor/Gutenberg coming soon)`, 'theme')
+  .option('--type <type>', `export type: ${VALID_TYPES.join(' | ')} (Elementor exports are made in the WPConvert dashboard; Gutenberg is coming soon)`, 'theme')
   .option('--name <name>', 'project name (defaults to the folder name)')
   .option('--root <dir>', 'force a subdirectory to zip and skip auto-detection (e.g. --root dist)')
   .option('--dry-run', 'list the files that would be uploaded, then exit (no upload, no credit, no quota check)')
@@ -278,7 +285,7 @@ program
 
     const type = String(opts.type || 'theme').toLowerCase();
     if (COMING_SOON_TYPES.includes(type)) {
-      die(`--type ${type} isn't available via the CLI yet — only "theme" is supported right now. Elementor and Gutenberg are coming soon.`);
+      die(unavailableTypeMessage(type));
     }
     if (!VALID_TYPES.includes(type)) {
       die(`Invalid --type "${type}". Use: ${VALID_TYPES.join(', ')}.`);
