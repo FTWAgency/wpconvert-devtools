@@ -6,6 +6,16 @@ It's a thin wrapper over the same HTTP API and smart-zip logic as the `wpconvert
 
 > Requires Node.js >= 18. No API key is needed to start: the agent can give you a link for a few free guest previews (one quick human check in the browser, no account), or for signing in. Downloads need Starter, Pro, Agency or pay-as-you-go credits, which you can buy from the same conversation.
 
+## No install: connect by URL
+
+WPConvert also runs an MCP server for you at `https://mcp.wpconvert.ai/mcp`. Add that URL to Claude, Claude Code, Cursor, VS Code, Codex or any app that supports remote MCP servers, then sign in to WPConvert once and click Allow. There is no API key and nothing to install: the assistant gives you a link to upload your site's ZIP, then preview and download links.
+
+```bash
+claude mcp add --transport http --scope user wpconvert https://mcp.wpconvert.ai/mcp
+```
+
+Setup for every app: [Connect your AI app](https://wpconvert.ai/guides/connect-ai-assistants/). Use this package instead when you want the assistant to zip a project folder on your computer, or to try WPConvert without an account.
+
 ## Tools
 
 | Tool | Purpose |
@@ -108,4 +118,4 @@ Free developer previews and guest previews are preview-only (Playground, no ZIP 
 
 ## Dependency pin
 
-This package pins `wpconvert@0.4.0` exactly for shared capability helpers (`resolveConvertPreflight`, quota formatters).
+This package pins `wpconvert@0.4.1` exactly for shared capability helpers (`resolveConvertPreflight`, quota formatters).

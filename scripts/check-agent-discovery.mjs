@@ -44,11 +44,12 @@ function globMarkdownFiles() {
 
 // --- MCP tools from source of truth ---
 const serverSrc = read('packages/mcp/src/server.mjs');
-const toolSources = serverSrc + read('packages/mcp/src/account.mjs');
+// Since 0.4.1 the shared tools (also run by the hosted server) live in src/shared/tools.mjs.
+const toolSources = serverSrc + read('packages/mcp/src/account.mjs') + read('packages/mcp/src/shared/tools.mjs');
 const mcpTools = [...toolSources.matchAll(/name:\s*'(wpconvert_[a-z_]+)'/g)].map((m) => m[1]);
 const expectedTools = new Set(mcpTools);
 if (expectedTools.size !== 10) {
-  fail(`expected 10 MCP tools in server.mjs + account.mjs, found ${expectedTools.size}`);
+  fail(`expected 10 MCP tools in server.mjs, account.mjs and shared/tools.mjs, found ${expectedTools.size}`);
 }
 
 // --- CLI commands ---

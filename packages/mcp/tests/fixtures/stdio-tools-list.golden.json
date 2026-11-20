@@ -1,0 +1,200 @@
+{
+  "tools": [
+    {
+      "name": "wpconvert_convert_folder",
+      "description": "Zip a local folder (excluding node_modules, build output, and secrets by default) and start a WordPress theme conversion. Call wpconvert_quota first to review capabilities (mode, credits, download availability). Returns a jobId and an idempotency_key. Leave idempotency_key blank for a new intentional conversion. If a prior call may have timed out or returned an ambiguous network error, retry with the exact idempotency_key returned by that prior call — do not omit it and do not invent a new one. Do not reuse a key for changed files, options, or a deliberate new conversion. Once you have a jobId, poll wpconvert_check_status until \"done\", then follow recommended_next for download or preview. Without an API key it uses the guest session from wpconvert_connect (free previews, up to 50MB zipped); with neither it returns recommended_next wpconvert_connect.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Absolute or relative path to the folder to convert."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "theme"
+            ],
+            "description": "Export type. Only \"theme\" is supported right now."
+          },
+          "name": {
+            "type": "string",
+            "description": "Project name (defaults to folder name)."
+          },
+          "maxAssetSizeMB": {
+            "type": "number",
+            "description": "Exclude individual files larger than this many MB."
+          },
+          "includeEnv": {
+            "type": "boolean",
+            "description": "DANGER: include .env / secret files (default false)."
+          },
+          "idempotency_key": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "Leave blank for a new intentional conversion. If a prior call may have timed out or returned an ambiguous network error, retry with the exact idempotency_key returned by that prior call. Do not reuse a key for changed files, options, or a deliberate new conversion."
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    {
+      "name": "wpconvert_check_status",
+      "description": "Check the status of a conversion job. Returns persisted status per the OpenAPI ConversionStatus enum (queued, analyzing, building, rendering, labeling, generating, validating, uploading, done, failed). The tool-layer bucket `processing` means still in progress — it is not a persisted API value. Also returns progress, download/preview availability, and recommended_next (which tool to call next). When done and downloadable, recommended_next points to wpconvert_download_result; for preview-only jobs it points to wpconvert_create_preview instead.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "jobId"
+        ]
+      }
+    },
+    {
+      "name": "wpconvert_download_result",
+      "description": "Download a completed conversion to disk. Only use when wpconvert_check_status shows download_available and recommended_next is wpconvert_download_result. Returns the saved file path. For preview-only jobs, use wpconvert_create_preview or upgrade and re-convert instead.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string"
+          },
+          "outDir": {
+            "type": "string",
+            "description": "Directory to save into (default: current directory)."
+          }
+        },
+        "required": [
+          "jobId"
+        ]
+      }
+    },
+    {
+      "name": "wpconvert_create_preview",
+      "description": "Create a WordPress Playground preview link for a completed conversion so the user can view the theme running in a live, in-browser WordPress (no local install). Returns a URL the user must open in a browser — you cannot embed or render it yourself. The link expires after about ten minutes and grants temporary access to the theme, so treat it as sensitive.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "jobId"
+        ]
+      }
+    },
+    {
+      "name": "wpconvert_explain_failure",
+      "description": "Return the failure reason for a failed conversion job. Distinguishes status retries, recovering a submission with the same idempotency_key via wpconvert_convert_folder, and starting a deliberate new conversion without that key.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "jobId"
+        ]
+      }
+    },
+    {
+      "name": "wpconvert_quota",
+      "description": "Show account quota, capabilities (conversion mode, can_start, download availability), and recommended_next. Call this before wpconvert_convert_folder to understand what the next conversion will consume. For a guest session it shows the free previews left.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wpconvert_connect",
+      "description": "Connect WPConvert without an API key. kind \"guest\": the user confirms they are human once in the browser and gets a few free previews (no account; downloads need a purchase). kind \"login\": the user signs in or creates an account in the browser and types the code shown, and a new API key is saved locally. Returns a link and a short code. Show both to the user and ask them to open the link; never open it yourself. Then call wpconvert_connect_status.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "guest",
+              "login"
+            ],
+            "description": "\"guest\" for free previews, \"login\" to use a WPConvert account (needed to buy)."
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      }
+    },
+    {
+      "name": "wpconvert_connect_status",
+      "description": "Check whether the user finished the wpconvert_connect link (waits up to about 20 seconds). Call it again while it says \"waiting\". Also reports how WPConvert is connected now: guest (with previews left) or account (with a masked email). Never returns the token or key.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "wpconvert_plans",
+      "description": "List what the user can buy: Starter (unlock one theme), Pro, Agency (monthly or yearly) and pay-as-you-go credit packs, with what each includes and today's price. Pass jobId to see options for unlocking that conversion. Show all options to the user and let them choose; do not pick for them. Then call wpconvert_checkout with the checkout_arguments of their choice.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "description": "Conversion to unlock (optional)."
+          }
+        }
+      }
+    },
+    {
+      "name": "wpconvert_checkout",
+      "description": "Create a Stripe checkout link for the option the user picked from wpconvert_plans. Call this only after the user has chosen; pass that choice's checkout_arguments unchanged. Needs a signed-in account (wpconvert_connect kind \"login\"). Returns a link the user opens to pay; never open it yourself and never pay on their behalf.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "starter",
+              "pro",
+              "agency",
+              "payg"
+            ]
+          },
+          "jobId": {
+            "type": "string",
+            "description": "Conversion to unlock. Required for starter."
+          },
+          "interval": {
+            "type": "string",
+            "enum": [
+              "month",
+              "year"
+            ],
+            "description": "Required for pro and agency."
+          },
+          "packSize": {
+            "type": "number",
+            "enum": [
+              1,
+              5,
+              10,
+              30
+            ],
+            "description": "Required for payg."
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      }
+    }
+  ]
+}

@@ -4,6 +4,8 @@ Convert a website or codebase **folder** into a WordPress theme without leaving 
 
 > Requires Node.js >= 18.
 
+> Prefer your AI app? Connect Claude, Cursor, VS Code or Codex to `https://mcp.wpconvert.ai/mcp` (nothing to install; sign in once), or run the [`@wpconvert/mcp`](https://www.npmjs.com/package/@wpconvert/mcp) server, which zips a project folder for the assistant. See [Connect your AI app](https://wpconvert.ai/guides/connect-ai-assistants/).
+
 ## Install
 
 ```bash
@@ -156,7 +158,7 @@ When enabled on the server, free verified accounts can create API keys that run 
 
 On success, `wpconvert convert` **automatically creates a Playground preview URL**. Preview-only jobs **auto-open your browser** by default; paid users get the link only (pass `--open` to launch). Use `--no-open` in CI/headless, or `--no-preview` to skip Playground entirely.
 
-Paid conversions use **1 credit** each (Agency is unlimited up to its soft cap), exactly like the web app. Failed conversions are refunded.
+Paid conversions use **1 credit** each (Agency is unlimited up to its soft cap), exactly like the web app. If a conversion fails, the credit or conversion it used goes back to your account.
 - **Retries**: the CLI never auto-retries a submit after it's been sent (so you're never double-charged). The large-upload PUT step is idempotent and safe to retry.
 - **URL conversion** is not available yet; point the CLI at a folder.
 
