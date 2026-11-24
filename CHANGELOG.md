@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] - 2026-11-24
+
+### Changed — `wpconvert@0.4.2` (CLI) and `@wpconvert/mcp@0.4.2` (MCP)
+
+- No code changes. Released so the MCP Registry listing (`ai.wpconvert/mcp`) matches the packages on npm.
+- `@wpconvert/mcp` depends exactly on `wpconvert@0.4.2`.
+
 ## [0.4.1] - 2026-11-19
 
 ### Changed — `wpconvert@0.4.1` (CLI) and `@wpconvert/mcp@0.4.1` (MCP)
