@@ -118,4 +118,4 @@ Free developer previews and guest previews are preview-only (Playground, no ZIP 
 
 ## Dependency pin
 
-This package pins `wpconvert@0.4.1` exactly for shared capability helpers (`resolveConvertPreflight`, quota formatters).
+This package pins `wpconvert@0.4.2` exactly for shared capability helpers (`resolveConvertPreflight`, quota formatters).

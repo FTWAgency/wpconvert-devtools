@@ -371,10 +371,10 @@ describe('MCP server capability integration', () => {
 });
 
 describe('MCP dependency pin', () => {
-  it('resolves wpconvert@0.4.1 exactly', () => {
+  it('resolves wpconvert@0.4.2 exactly', () => {
     const pkg = require('wpconvert/package.json');
-    assert.strictEqual(pkg.version, '0.4.1');
+    assert.strictEqual(pkg.version, '0.4.2');
     const mcpPkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
-    assert.strictEqual(mcpPkg.dependencies.wpconvert, '0.4.1');
+    assert.strictEqual(mcpPkg.dependencies.wpconvert, '0.4.2');
   });
 });
